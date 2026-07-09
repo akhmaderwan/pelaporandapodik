@@ -16,6 +16,87 @@ interface ReportViewerProps {
   onEditStudent: (student: Student) => void;
 }
 
+const ensureBase64DataUrl = (url: string, targetWidth?: number): Promise<string> => {
+  if (!url) return Promise.resolve('');
+  if (url.startsWith('data:image/') && !url.startsWith('data:image/svg+xml')) {
+    return Promise.resolve(url);
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const w = targetWidth || img.width || 150;
+        const h = targetWidth ? Math.round(img.height * (targetWidth / img.width)) : (img.height || 150);
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.90));
+          return;
+        }
+      } catch (e) {
+        console.error('Error in canvas conversion for export:', e);
+      }
+      resolve(url);
+    };
+    img.onerror = () => {
+      resolve(url);
+    };
+    img.src = url;
+  });
+};
+
+const parseDataUrl = (dataUrl: string) => {
+  if (!dataUrl || !dataUrl.startsWith('data:')) {
+    return null;
+  }
+  const mimeMatch = dataUrl.match(/^data:([^;]+);/);
+  if (!mimeMatch) return null;
+  const mime = mimeMatch[1];
+  const commaIndex = dataUrl.indexOf(',');
+  if (commaIndex === -1) return null;
+  const base64 = dataUrl.substring(commaIndex + 1);
+  return { mime, base64 };
+};
+
+const buildMhtml = (htmlBody: string, images: { [key: string]: { mime: string; base64: string } }) => {
+  const boundary = "NEXT.ITEM-BOUNDARY";
+  
+  let mhtml = [
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/related; boundary="${boundary}"; type="text/html"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/html; charset="utf-8"',
+    'Content-Location: document.html',
+    '',
+    htmlBody,
+    ''
+  ].join('\r\n');
+
+  Object.entries(images).forEach(([location, imgInfo]) => {
+    if (!imgInfo.base64) return;
+    mhtml += [
+      `--${boundary}`,
+      `Content-Type: ${imgInfo.mime}`,
+      'Content-Transfer-Encoding: base64',
+      `Content-Location: ${location}`,
+      '',
+      imgInfo.base64,
+      ''
+    ].join('\r\n');
+  });
+
+  mhtml += `--${boundary}--`;
+  return mhtml;
+};
+
 export default function ReportViewer({
   students,
   schoolProfile,
@@ -51,11 +132,14 @@ export default function ReportViewer({
   const resolvedIssuesCount = students.filter(student => student.masalahTertangani).length;
 
   // EXPORT TO EXCEL HELPER
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const isAktif = subTab === 'aktif';
     const suffix = isAktif ? 'Kesalahan_Aktif' : 'Terverifikasi';
     const filename = `Laporan_${suffix}_Dapodik_${schoolProfile.npsn}_${new Date().toISOString().slice(0, 10)}.xls`;
     
+    const logoForExport = schoolProfile.logoUrl ? await ensureBase64DataUrl(schoolProfile.logoUrl, 150) : '';
+    const kopForExport = schoolProfile.useKopGambar && schoolProfile.kopLaporanUrl ? await ensureBase64DataUrl(schoolProfile.kopLaporanUrl, 750) : '';
+
     // Constructing a beautifully styled HTML file that Excel reads perfectly.
     const tableHeader = isAktif ? `
             <tr>
@@ -116,7 +200,7 @@ export default function ReportViewer({
       `;
     }).join('');
 
-    const colSpanVal = isAktif ? (schoolProfile.logoUrl ? 7 : 8) : (schoolProfile.logoUrl ? 5 : 6);
+    const colSpanVal = isAktif ? (logoForExport ? 8 : 9) : (logoForExport ? 6 : 7);
     const totalCols = isAktif ? 9 : 7;
 
     const htmlContent = `
@@ -138,11 +222,31 @@ export default function ReportViewer({
       </head>
       <body>
          <!-- KOP SEKOLAH -->
+         ${schoolProfile.useKopGambar && kopForExport ? `
+         <table style="width: 100%;">
+           <tr>
+             <td colspan="${totalCols}" style="text-align: center; padding-bottom: 15px;">
+               <img src="${kopForExport}" width="750" style="width: 750px; display: block; margin: 0 auto;" />
+             </td>
+           </tr>
+           <tr><td colspan="${totalCols}"></td></tr>
+           <tr>
+             <td colspan="${totalCols}" style="font-size: 14pt; font-weight: bold; text-align: center; color: #000;">
+               LAPORAN AUDIT &amp; REKAPITULASI DATA PESERTA DIDIK
+             </td>
+           </tr>
+           <tr>
+             <td colspan="${totalCols}" style="font-size: 10pt; text-align: center; color: #666;">
+               Status Cetak: ${isAktif ? 'KESALAHAN DATA AKTIF' : 'DATA VALID &amp; TERVERIFIKASI'} | Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}
+             </td>
+           </tr>
+         </table>
+         ` : `
          <table>
            <tr>
-             ${schoolProfile.logoUrl ? `
+             ${logoForExport ? `
                <td rowspan="3" style="width: 80px; text-align: center; vertical-align: middle;">
-                 <img src="${schoolProfile.logoUrl}" width="70" height="70" style="object-fit: contain;" />
+                 <img src="${logoForExport}" width="75" height="75" style="width: 75px; height: 75px; display: block; margin: 0 auto;" />
                </td>
              ` : ''}
              <td colspan="${colSpanVal}" class="header-title">${schoolProfile.namaSekolah.toUpperCase()}</td>
@@ -165,6 +269,7 @@ export default function ReportViewer({
              </td>
            </tr>
          </table>
+         `}
 
          <br/>
 
@@ -212,11 +317,14 @@ export default function ReportViewer({
   };
 
   // EXPORT TO WORD HELPER
-  const handleExportWord = () => {
+  const handleExportWord = async () => {
     const isAktif = subTab === 'aktif';
     const suffix = isAktif ? 'Kesalahan_Aktif' : 'Terverifikasi';
     const filename = `Laporan_${suffix}_Dapodik_${schoolProfile.npsn}_${new Date().toISOString().slice(0, 10)}.doc`;
     
+    const logoForExport = schoolProfile.logoUrl ? await ensureBase64DataUrl(schoolProfile.logoUrl, 150) : '';
+    const kopForExport = schoolProfile.useKopGambar && schoolProfile.kopLaporanUrl ? await ensureBase64DataUrl(schoolProfile.kopLaporanUrl, 720) : '';
+
     const tableHeader = isAktif ? `
             <tr>
               <th style="width: 5%; background-color: #f3f4f6; border: 1px solid #000000; padding: 6px; font-weight: bold; text-align: center;">No</th>
@@ -286,8 +394,8 @@ export default function ReportViewer({
         <title>Laporan Penanganan</title>
         <style>
           @page {
-            size: 11in 8.5in; /* Landscape orientation */
-            margin: 1in;
+            size: 8.5in 11in; /* Portrait orientation */
+            margin: 0.75in 0.5in;
           }
           body { font-family: 'Times New Roman', Times, serif; line-height: 1.3; }
           .kop-surat { text-align: center; border-bottom: 3px double #000; padding-bottom: 5px; margin-bottom: 20px; }
@@ -305,11 +413,20 @@ export default function ReportViewer({
       </head>
       <body>
         <!-- KOP SURAT SEKOLAH -->
+        ${schoolProfile.useKopGambar && kopForExport ? `
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; padding-bottom: 8px;">
+          <tr>
+            <td style="text-align: center; padding-bottom: 10px;">
+              <img src="img/kop.jpg" width="720" style="width: 720px; display: block; margin: 0 auto;" />
+            </td>
+          </tr>
+        </table>
+        ` : `
         <table style="width: 100%; border-collapse: collapse; border-bottom: 3px double #000000; margin-bottom: 20px; padding-bottom: 8px;">
           <tr>
-            ${schoolProfile.logoUrl ? `
+            ${logoForExport ? `
               <td style="width: 80px; text-align: center; vertical-align: middle; padding-right: 15px;">
-                <img src="${schoolProfile.logoUrl}" width="70" height="70" style="object-fit: contain;" />
+                <img src="img/logo.jpg" width="75" height="75" style="width: 75px; height: 75px; display: block;" />
               </td>
             ` : ''}
             <td style="text-align: center; vertical-align: middle;">
@@ -323,6 +440,7 @@ export default function ReportViewer({
             </td>
           </tr>
         </table>
+        `}
 
         <!-- JUDUL DOKUMEN -->
         <div class="doc-title">${titleText}</div>
@@ -361,7 +479,18 @@ export default function ReportViewer({
       </html>
     `;
 
-    const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8;' });
+    const images: { [key: string]: { mime: string; base64: string } } = {};
+    if (logoForExport) {
+      const parsed = parseDataUrl(logoForExport);
+      if (parsed) images['img/logo.jpg'] = parsed;
+    }
+    if (kopForExport) {
+      const parsed = parseDataUrl(kopForExport);
+      if (parsed) images['img/kop.jpg'] = parsed;
+    }
+
+    const mhtmlContent = buildMhtml(htmlContent, images);
+    const blob = new Blob([mhtmlContent], { type: 'application/msword;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

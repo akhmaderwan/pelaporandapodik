@@ -15,6 +15,8 @@ export interface SchoolProfile {
   emailSekolah: string;
   logoUrl?: string;
   runningText?: string;
+  kopLaporanUrl?: string;
+  useKopGambar?: boolean;
 }
 
 export interface Student {

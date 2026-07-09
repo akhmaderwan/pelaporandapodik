@@ -3,7 +3,7 @@ import { SchoolProfile } from '../types';
 import { 
   Building2, Save, Check, Award, MapPin, User, Mail, 
   Upload, Sparkles, RefreshCw, Trash2, HelpCircle, GraduationCap,
-  BookOpen, Star, Globe, Landmark
+  BookOpen, Star, Globe, Landmark, ImageIcon
 } from 'lucide-react';
 
 interface SchoolProfileViewProps {
@@ -114,7 +114,8 @@ const generateSvgLogo = (
     </svg>
   `.trim().replace(/\s+/g, ' ');
 
-  return `data:image/svg+xml,${encodeURIComponent(svgString)}`;
+  const base64Svg = btoa(unescape(encodeURIComponent(svgString)));
+  return `data:image/svg+xml;base64,${base64Svg}`;
 };
 
 export default function SchoolProfileView({ profile, onSave }: SchoolProfileViewProps) {
@@ -123,7 +124,12 @@ export default function SchoolProfileView({ profile, onSave }: SchoolProfileView
 
   // Logo source: 'builder' (custom vector generator) or 'upload' (local file)
   const [logoSource, setLogoSource] = useState<'builder' | 'upload'>(() => {
-    if (profile.logoUrl && (profile.logoUrl.startsWith('data:image/png') || profile.logoUrl.startsWith('data:image/jpeg'))) {
+    if (profile.logoUrl && (
+      profile.logoUrl.startsWith('data:image/png') || 
+      profile.logoUrl.startsWith('data:image/jpeg') || 
+      profile.logoUrl.startsWith('data:image/webp') || 
+      (profile.logoUrl.startsWith('data:image/svg') && !profile.logoUrl.includes('bgGrad'))
+    )) {
       return 'upload';
     }
     return 'builder';
@@ -145,6 +151,70 @@ export default function SchoolProfileView({ profile, onSave }: SchoolProfileView
 
   // Upload States
   const [dragActive, setDragActive] = useState(false);
+  const [kopDragActive, setKopDragActive] = useState(false);
+
+  const handleKopDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setKopDragActive(true);
+    } else if (e.type === "dragleave") {
+      setKopDragActive(false);
+    }
+  };
+
+  const handleKopDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setKopDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    processUploadedKopFile(file);
+  };
+
+  const handleKopFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    processUploadedKopFile(file);
+  };
+
+  const processUploadedKopFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Format file tidak didukung. Harap pilih file gambar (PNG, JPG, atau SVG).');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran file terlalu besar. Batas maksimal adalah 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Data = event.target?.result as string;
+      setFormData(prev => ({
+        ...prev,
+        kopLaporanUrl: base64Data,
+        useKopGambar: true
+      }));
+      setIsSaved(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearKop = () => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus kop gambar kustom dan kembali ke format teks standar?')) {
+      setFormData(prev => ({
+        ...prev,
+        kopLaporanUrl: '',
+        useKopGambar: false
+      }));
+      setIsSaved(false);
+    }
+  };
 
   // Sync built logo to form data when builder settings change
   useEffect(() => {
@@ -715,6 +785,127 @@ export default function SchoolProfileView({ profile, onSave }: SchoolProfileView
                     placeholder="NIP Operator (Kosongkan jika bukan PNS)"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Custom Kop Laporan Section */}
+            <div className="space-y-4 text-left" id="custom-kop-laporan-section">
+              <h3 className="text-base font-semibold text-gray-800 flex items-center space-x-2 border-b border-gray-100 pb-2">
+                <ImageIcon className="h-5 w-5 text-indigo-600" />
+                <span>Kop Surat & Kepala Laporan Kustom</span>
+              </h3>
+              
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-gray-700 block">Format Kepala Laporan (Kop Surat)</span>
+                    <span className="text-[10px] text-gray-400">Pilih antara Kop teks standar otomatis atau gambar banner kustom</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 bg-white p-1 rounded-lg border border-gray-200 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, useKopGambar: false }));
+                        setIsSaved(false);
+                      }}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                        !formData.useKopGambar
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Kop Teks Standar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, useKopGambar: true }));
+                        setIsSaved(false);
+                      }}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                        formData.useKopGambar
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Kop Gambar Kustom
+                    </button>
+                  </div>
+                </div>
+
+                {formData.useKopGambar ? (
+                  <div className="space-y-4 animate-fade-in">
+                    {/* Live Kop Laporan Preview */}
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Pratinjau Kop Laporan</span>
+                      {formData.kopLaporanUrl ? (
+                        <div className="relative bg-white rounded-xl border border-gray-200 p-2 overflow-hidden shadow-xs">
+                          <img 
+                            src={formData.kopLaporanUrl} 
+                            alt="Pratinjau Kop Laporan" 
+                            className="w-full max-h-32 object-contain mx-auto"
+                            referrerPolicy="no-referrer"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleClearKop}
+                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all cursor-pointer shadow-xs"
+                            title="Hapus Kop Laporan"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-200 rounded-xl bg-white p-6 text-center text-gray-400 flex flex-col items-center justify-center">
+                          <ImageIcon className="h-10 w-10 stroke-1 text-gray-300 mb-2" />
+                          <span className="text-xs font-semibold">Belum Ada Gambar Kop</span>
+                          <span className="text-[10px] text-gray-400 mt-1">Unggah berkas di bawah untuk menampilkan kop kustom</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Drag and Drop Zone */}
+                    <div
+                      onDragEnter={handleKopDrag}
+                      onDragOver={handleKopDrag}
+                      onDragLeave={handleKopDrag}
+                      onDrop={handleKopDrop}
+                      className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                        kopDragActive 
+                          ? 'border-blue-500 bg-blue-50/50' 
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        id="kop-file-picker"
+                        accept="image/*"
+                        onChange={handleKopFileChange}
+                        className="hidden"
+                      />
+                      <label htmlFor="kop-file-picker" className="cursor-pointer block space-y-2">
+                        <div className="mx-auto h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500">
+                          <Upload className="h-5 w-5" />
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-bold text-indigo-600 hover:underline">Klik untuk pilih berkas</span> atau seret kop gambar ke sini
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-normal">
+                          Mendukung PNG, JPG, JPEG, atau SVG (Maks. 2MB)<br />
+                          Rekomendasi rasio horizontal (contoh: 800 x 150 piksel)
+                        </p>
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-xs text-blue-700 leading-relaxed flex items-start space-x-2">
+                    <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                    <span>
+                      Saat ini sistem menggunakan format <strong>Kop Teks Standar otomatis</strong>. Logo sekolah dan rincian identitas utama (Nama Sekolah, Alamat, NPSN) di samping akan otomatis disusun menjadi Kepala Surat / Kop Surat dinas pada setiap cetakan dokumen Word/Excel.
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
