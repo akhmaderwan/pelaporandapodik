@@ -53,7 +53,18 @@ export default function AdminManagementView() {
         const safeAdmins = dbAdmins.map(({ password, ...rest }) => rest);
         setAdmins(safeAdmins);
       } catch (firestoreErr) {
-        setError('Gagal terhubung dengan database server lokal maupun cloud.');
+        console.warn("Gagal memuat dari Cloud Firestore, menggunakan fallback luring...");
+        try {
+          const defaultAdminsModule = await import('../../db_admins.json');
+          const defaultAdmins = defaultAdminsModule.default || defaultAdminsModule;
+          const localAdminsStr = localStorage.getItem('dapodik_local_admins');
+          const localAdmins = localAdminsStr ? JSON.parse(localAdminsStr) : [];
+          const allAdmins = [...defaultAdmins, ...localAdmins];
+          const safeAdmins = allAdmins.map(({ password, ...rest }: any) => rest);
+          setAdmins(safeAdmins);
+        } catch (jsonErr) {
+          setError('Gagal terhubung dengan database server lokal, cloud, maupun luring.');
+        }
       }
     } finally {
       setLoading(false);
@@ -135,7 +146,41 @@ export default function AdminManagementView() {
         setNama('');
         fetchAdmins();
       } catch (firestoreErr) {
-        setFormError('Gagal menyimpan operator ke database lokal maupun cloud.');
+        console.warn("Gagal menyimpan ke Cloud Firestore, menggunakan fallback luring...");
+        try {
+          const cleanUsername = username.trim().toLowerCase();
+          
+          const defaultAdminsModule = await import('../../db_admins.json');
+          const defaultAdmins = defaultAdminsModule.default || defaultAdminsModule;
+          const localAdminsStr = localStorage.getItem('dapodik_local_admins');
+          const localAdmins = localAdminsStr ? JSON.parse(localAdminsStr) : [];
+          const allAdmins = [...defaultAdmins, ...localAdmins];
+          
+          if (allAdmins.some((a: any) => a.username.toLowerCase() === cleanUsername)) {
+            setFormError("Username sudah digunakan oleh operator lain.");
+            setSubmitting(false);
+            return;
+          }
+
+          const newAdmin = {
+            id: `admin-${Date.now()}`,
+            username: cleanUsername,
+            password: password.trim(),
+            nama: nama.trim(),
+            createdAt: new Date().toISOString()
+          };
+
+          localAdmins.push(newAdmin);
+          localStorage.setItem('dapodik_local_admins', JSON.stringify(localAdmins));
+          
+          setFormSuccess(`Operator "${newAdmin.nama}" berhasil disimpan secara luring!`);
+          setUsername('');
+          setPassword('');
+          setNama('');
+          fetchAdmins();
+        } catch (jsonErr) {
+          setFormError('Gagal menyimpan operator ke database lokal, cloud, maupun luring.');
+        }
       }
     } finally {
       setSubmitting(false);
@@ -187,7 +232,32 @@ export default function AdminManagementView() {
           setDeleteSuccess('');
         }, 4000);
       } catch (firestoreErr) {
-        setDeleteError('Gagal menghapus operator dari database lokal maupun cloud.');
+        console.warn("Gagal menghapus dari Cloud Firestore, mencoba via fallback luring...");
+        try {
+          const defaultAdminsModule = await import('../../db_admins.json');
+          const defaultAdmins = defaultAdminsModule.default || defaultAdminsModule;
+          const localAdminsStr = localStorage.getItem('dapodik_local_admins');
+          const localAdmins = localAdminsStr ? JSON.parse(localAdminsStr) : [];
+          const allAdmins = [...defaultAdmins, ...localAdmins];
+          
+          if (allAdmins.length <= 1) {
+            setDeleteError("Tidak dapat menghapus operator satu-satunya. Harus tersisa minimal satu operator.");
+            setDeleting(false);
+            return;
+          }
+
+          const updatedLocalAdmins = localAdmins.filter((a: any) => a.id !== adminToDelete.id);
+          localStorage.setItem('dapodik_local_admins', JSON.stringify(updatedLocalAdmins));
+          
+          setDeleteSuccess(`Operator "${adminToDelete.nama}" berhasil dihapus secara luring.`);
+          setAdminToDelete(null);
+          fetchAdmins();
+          setTimeout(() => {
+            setDeleteSuccess('');
+          }, 4000);
+        } catch (jsonErr) {
+          setDeleteError('Gagal menghapus operator dari database lokal, cloud, maupun luring.');
+        }
       }
     } finally {
       setDeleting(false);

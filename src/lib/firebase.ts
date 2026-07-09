@@ -249,6 +249,13 @@ export async function getFirestoreAdmins(): Promise<AdminUser[]> {
           password: 'erwan123',
           nama: 'AKHMAD ERWAN',
           createdAt: new Date().toISOString()
+        },
+        {
+          id: 'admin-1783590243502',
+          username: 'admin',
+          password: 'erwan123',
+          nama: 'admin',
+          createdAt: new Date().toISOString()
         }
       ];
       try {
