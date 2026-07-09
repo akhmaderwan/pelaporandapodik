@@ -339,14 +339,27 @@ export default function App() {
     }
   };
 
-  const confirmDeleteStudent = () => {
+  const confirmDeleteStudent = async () => {
     if (!studentToDelete) return;
-    const updated = students.filter(s => s.id !== studentToDelete.id);
-    saveStudentsToLocal(updated);
-    if (selectedStudent && selectedStudent.id === studentToDelete.id) {
+    const studentId = studentToDelete.id;
+    const updated = students.filter(s => s.id !== studentId);
+    
+    // Update local state and cache immediately for high responsiveness
+    setStudents(updated);
+    localStorage.setItem('dapodik_db_students', JSON.stringify(updated));
+    
+    if (selectedStudent && selectedStudent.id === studentId) {
       setSelectedStudent(null);
     }
+    
     setStudentToDelete(null);
+
+    // Permanently delete from Cloud Firestore
+    try {
+      await removeStudent(studentId);
+    } catch (e) {
+      console.error("Gagal menghapus data siswa secara permanen dari Cloud Firestore:", e);
+    }
   };
 
   const handleImportStudents = (imported: Student[], overwriteDuplicates: boolean) => {
