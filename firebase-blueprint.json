@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Student record matching Dapodik and KK information for verification",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the student (usually NISN or generated ID)"
+        },
+        "nama": {
+          "type": "string",
+          "description": "Full name of the student"
+        },
+        "nisn": {
+          "type": "string",
+          "description": "10-digit National Student Identification Number"
+        },
+        "nik": {
+          "type": "string",
+          "description": "16-digit National Identity Card number"
+        },
+        "noKk": {
+          "type": "string",
+          "description": "Family card registration number"
+        },
+        "tempatLahir": {
+          "type": "string",
+          "description": "Birthplace city/district"
+        },
+        "tanggalLahir": {
+          "type": "string",
+          "description": "Birthdate in YYYY-MM-DD format"
+        },
+        "jenisKelamin": {
+          "type": "string",
+          "enum": ["L", "P"],
+          "description": "Gender designation (L for Laki-laki, P for Perempuan)"
+        },
+        "namaIbuKandung": {
+          "type": "string",
+          "description": "Biological mother's full name"
+        },
+        "tingkatKelas": {
+          "type": "string",
+          "description": "Class level grade (e.g., '10', '11', '12')"
+        },
+        "rombonganBelajar": {
+          "type": "string",
+          "description": "Classroom division (e.g., 'MIPA 1')"
+        },
+        "statusKependidikan": {
+          "type": "string",
+          "description": "Educational active status"
+        },
+        "alamatSiswa": {
+          "type": "string",
+          "description": "Residential address"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Whether the record has been fully verified and locked"
+        }
+      },
+      "required": ["id", "nama", "nisn", "nik"]
+    },
+    "SchoolProfile": {
+      "title": "SchoolProfile",
+      "description": "General settings and dynamic running text banners for the school portal",
+      "type": "object",
+      "properties": {
+        "namaSekolah": {
+          "type": "string",
+          "description": "Name of the school"
+        },
+        "npsn": {
+          "type": "string",
+          "description": "National School Identification Number"
+        },
+        "runningText": {
+          "type": "string",
+          "description": "Dynamic top-running announcement text"
+        }
+      },
+      "required": ["namaSekolah", "npsn"]
+    },
+    "ResolutionNote": {
+      "title": "ResolutionNote",
+      "description": "Audit notes detailing the resolution or status update of a discrepancy",
+      "type": "object",
+      "properties": {
+        "notes": {
+          "type": "string",
+          "description": "Written notes detailing the fix"
+        }
+      },
+      "required": ["notes"]
+    }
+  },
+  "firestore": {
+    "students": {
+      "schema": "Student",
+      "description": "Collection storing student verification states and attributes"
+    },
+    "school_profile": {
+      "schema": "SchoolProfile",
+      "description": "Collection storing school information and top marquee banner data"
+    },
+    "resolution_notes": {
+      "schema": "ResolutionNote",
+      "description": "Collection tracking resolutions for validation errors"
+    }
+  }
+}

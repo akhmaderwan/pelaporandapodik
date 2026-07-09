@@ -1,0 +1,8 @@
+{
+  "name": "DapoValidator - Perbaikan Data Dapodik",
+  "description": "Aplikasi penanganan perbaikan data Dapodik meliputi validasi data peserta didik terperinci, laporan kesalahan teredit dan terunduh (Word/Excel), profil sekolah kustom, dan basis data lengkap.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Google AI Studio App</title>
+    <script>
+      // Prevent Vite HMR WebSocket connection errors in the sandbox environment.
+      (function() {
+        const OriginalWebSocket = window.WebSocket;
+        if (OriginalWebSocket) {
+          window.WebSocket = function(url, protocols) {
+            if (protocols === 'vite-hmr' || (Array.isArray(protocols) && protocols.includes('vite-hmr'))) {
+              console.log('[Vite HMR] Intercepted and neutralized HMR WebSocket connection to avoid connection errors in the preview container.');
+              return {
+                readyState: 1, // OPEN
+                addEventListener(event, callback) {
+                  if (event === 'open') {
+                    setTimeout(() => {
+                      if (typeof callback === 'function') callback({ type: 'open' });
+                    }, 0);
+                  }
+                },
+                removeEventListener() {},
+                send() {},
+                close() {}
+              };
+            }
+            return new OriginalWebSocket(url, protocols);
+          };
+          Object.setPrototypeOf(window.WebSocket, OriginalWebSocket);
+          window.WebSocket.prototype = OriginalWebSocket.prototype;
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

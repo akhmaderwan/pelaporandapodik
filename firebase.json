@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-dapovalidatorper-7efb966d-4253-4b06-88e0-889bf9194333",
+      "rules": "firestore.rules"
+    }
+  ]
+}
