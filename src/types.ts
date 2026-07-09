@@ -57,3 +57,11 @@ export interface ValidationError {
   isResolved: boolean;
   resolutionNotes: string; // editable by the user
 }
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  password?: string;
+  nama: string;
+  createdAt: string;
+}

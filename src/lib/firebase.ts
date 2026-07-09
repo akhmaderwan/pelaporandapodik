@@ -11,7 +11,7 @@ import {
   writeBatch 
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { Student, SchoolProfile } from '../types';
+import { Student, SchoolProfile, AdminUser } from '../types';
 import { DEFAULT_SCHOOL_PROFILE, DEFAULT_STUDENTS } from '../data';
 
 // Initialize Firebase
@@ -79,6 +79,7 @@ const STUDENTS_COLL = 'students';
 const PROFILE_COLL = 'school_profile';
 const PROFILE_DOC_ID = 'info';
 const NOTES_COLL = 'resolution_notes';
+const ADMINS_COLL = 'admins';
 
 /**
  * Fetch school profile from Firestore.
@@ -222,5 +223,74 @@ export async function saveResolutionNote(errorId: string, notes: string): Promis
     await setDoc(docRef, { notes });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `${NOTES_COLL}/${errorId}`);
+  }
+}
+
+/**
+ * Fetch all admin users from Firestore.
+ * If empty, seeds with the default administrator.
+ */
+export async function getFirestoreAdmins(): Promise<AdminUser[]> {
+  const adminsCollRef = collection(db, ADMINS_COLL);
+  try {
+    const snap = await getDocs(adminsCollRef);
+    if (!snap.empty) {
+      const adminsList: AdminUser[] = [];
+      snap.forEach((docSnap) => {
+        adminsList.push(docSnap.data() as AdminUser);
+      });
+      return adminsList;
+    } else {
+      // Seed default admin
+      const defaultAdmins: AdminUser[] = [
+        {
+          id: 'admin-1783065544727',
+          username: 'bekecotanyut',
+          password: 'erwan123',
+          nama: 'AKHMAD ERWAN',
+          createdAt: new Date().toISOString()
+        }
+      ];
+      try {
+        const batch = writeBatch(db);
+        defaultAdmins.forEach((admin) => {
+          const docRef = doc(db, ADMINS_COLL, admin.id);
+          batch.set(docRef, admin);
+        });
+        await batch.commit();
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, ADMINS_COLL);
+      }
+      return defaultAdmins;
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('{"error"')) {
+      throw error;
+    }
+    handleFirestoreError(error, OperationType.GET, ADMINS_COLL);
+  }
+}
+
+/**
+ * Save or update an admin in Firestore.
+ */
+export async function saveFirestoreAdmin(admin: AdminUser): Promise<void> {
+  const docRef = doc(db, ADMINS_COLL, admin.id);
+  try {
+    await setDoc(docRef, admin);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `${ADMINS_COLL}/${admin.id}`);
+  }
+}
+
+/**
+ * Delete an admin from Firestore.
+ */
+export async function removeFirestoreAdmin(adminId: string): Promise<void> {
+  const docRef = doc(db, ADMINS_COLL, adminId);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `${ADMINS_COLL}/${adminId}`);
   }
 }

@@ -35,6 +35,9 @@ export default function AdminManagementView() {
     setError('');
     try {
       const response = await fetch('/api/admins');
+      if (!response.ok) {
+        throw new Error('Server returned non-ok status');
+      }
       const data = await response.json();
       if (data.success) {
         setAdmins(data.admins);
@@ -42,7 +45,16 @@ export default function AdminManagementView() {
         setError(data.error || 'Gagal memuat daftar operator.');
       }
     } catch (err) {
-      setError('Gagal terhubung dengan server database.');
+      console.warn("Gagal menghubungi server database local, memuat via Cloud Firestore...");
+      try {
+        const { getFirestoreAdmins } = await import('../lib/firebase');
+        const dbAdmins = await getFirestoreAdmins();
+        // Mask passwords before setting state
+        const safeAdmins = dbAdmins.map(({ password, ...rest }) => rest);
+        setAdmins(safeAdmins);
+      } catch (firestoreErr) {
+        setError('Gagal terhubung dengan database server lokal maupun cloud.');
+      }
     } finally {
       setLoading(false);
     }
@@ -81,6 +93,10 @@ export default function AdminManagementView() {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error('Server returned non-ok status');
+      }
+
       const data = await response.json();
       if (data.success) {
         setFormSuccess(`Operator "${data.admin.nama}" berhasil disimpan ke database!`);
@@ -92,7 +108,35 @@ export default function AdminManagementView() {
         setFormError(data.error || 'Gagal menyimpan operator baru.');
       }
     } catch (err) {
-      setFormError('Terjadi kesalahan koneksi jaringan.');
+      console.warn("Gagal menyimpan ke database server local, menyimpan via Cloud Firestore...");
+      try {
+        const { getFirestoreAdmins, saveFirestoreAdmin } = await import('../lib/firebase');
+        const dbAdmins = await getFirestoreAdmins();
+        const cleanUsername = username.trim().toLowerCase();
+        
+        if (dbAdmins.some(a => a.username.toLowerCase() === cleanUsername)) {
+          setFormError("Username sudah digunakan oleh operator lain.");
+          setSubmitting(false);
+          return;
+        }
+
+        const newAdmin = {
+          id: `admin-${Date.now()}`,
+          username: cleanUsername,
+          password: password.trim(),
+          nama: nama.trim(),
+          createdAt: new Date().toISOString()
+        };
+
+        await saveFirestoreAdmin(newAdmin);
+        setFormSuccess(`Operator "${newAdmin.nama}" berhasil disimpan ke database Cloud!`);
+        setUsername('');
+        setPassword('');
+        setNama('');
+        fetchAdmins();
+      } catch (firestoreErr) {
+        setFormError('Gagal menyimpan operator ke database lokal maupun cloud.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -108,6 +152,11 @@ export default function AdminManagementView() {
       const response = await fetch(`/api/admins/${adminToDelete.id}`, {
         method: 'DELETE',
       });
+
+      if (!response.ok) {
+        throw new Error('Server returned non-ok status');
+      }
+
       const data = await response.json();
       if (data.success) {
         setDeleteSuccess(`Operator "${adminToDelete.nama}" berhasil dihapus secara permanen.`);
@@ -121,7 +170,25 @@ export default function AdminManagementView() {
         setDeleteError(data.error || 'Gagal menghapus operator.');
       }
     } catch (err) {
-      setDeleteError('Gagal menghubungi database server.');
+      console.warn("Gagal menghapus dari database server local, mencoba via Cloud Firestore...");
+      try {
+        const { getFirestoreAdmins, removeFirestoreAdmin } = await import('../lib/firebase');
+        const dbAdmins = await getFirestoreAdmins();
+        if (dbAdmins.length <= 1) {
+          setDeleteError("Tidak dapat menghapus operator satu-satunya. Harus tersisa minimal satu operator.");
+          setDeleting(false);
+          return;
+        }
+        await removeFirestoreAdmin(adminToDelete.id);
+        setDeleteSuccess(`Operator "${adminToDelete.nama}" berhasil dihapus secara permanen dari Cloud.`);
+        setAdminToDelete(null);
+        fetchAdmins();
+        setTimeout(() => {
+          setDeleteSuccess('');
+        }, 4000);
+      } catch (firestoreErr) {
+        setDeleteError('Gagal menghapus operator dari database lokal maupun cloud.');
+      }
     } finally {
       setDeleting(false);
     }
