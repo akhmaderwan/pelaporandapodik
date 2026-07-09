@@ -403,6 +403,65 @@ export default function GitHubConnectionView({
         )}
       </div>
 
+      {/* EXPLICIT PLATFORM ERROR TROUBLESHOOTING BANNER */}
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-4.5 space-y-3 animate-fade-in" id="platform-github-app-error-banner">
+        <div className="flex items-center space-x-2 text-red-800">
+          <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+          <h4 className="text-xs font-black">Panduan Mengatasi Error Platform: "Failed to load file differences..."</h4>
+        </div>
+        
+        <p className="text-[11px] text-red-900 leading-relaxed">
+          Jika Anda melihat notifikasi error berwarna merah bertuliskan <code className="font-mono bg-red-100 px-1 rounded font-bold">Failed to load file differences, The GitHub repository could not be found, or you lack permissions...</code> saat melakukan export atau sync kode aplikasi di panel Google AI Studio (tombol di pojok kanan atas), silakan ikuti petunjuk berikut untuk mengatasinya:
+        </p>
+
+        <div className="bg-white rounded-xl p-3 border border-red-100 space-y-3.5 text-xs text-gray-700">
+          <div className="space-y-1.5">
+            <span className="text-[9px] font-extrabold text-blue-700 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit">Langkah 1: Pasang / Konfigurasi GitHub App AI Studio</span>
+            <p className="text-[11px] text-gray-600">
+              Buka setelan aplikasi GitHub Anda di tab baru dengan mengeklik tombol di bawah ini:
+            </p>
+            <a 
+              href="https://github.com/settings/installations" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-gray-900 hover:bg-black text-white text-[10px] font-bold rounded-lg transition-all cursor-pointer"
+            >
+              <Github className="h-3.5 w-3.5" />
+              <span>Buka GitHub App Settings</span>
+              <ChevronRight className="h-3 w-3" />
+            </a>
+          </div>
+
+          <div className="space-y-1 pt-2 border-t border-gray-50">
+            <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit">Langkah 2: Atur Akses Repositori</span>
+            <p className="text-[11px] text-gray-600 font-medium">
+              Temukan aplikasi <strong>Google AI Studio</strong> di daftar tersebut, lalu klik tombol <strong>Configure</strong> (Konfigurasi). Di bagian <strong>Repository Access</strong>, pilih opsi:
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 mt-1">
+              <div className="flex-1 bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-[10px]">
+                <strong className="text-gray-900 block">Opsi A (Direkomendasikan):</strong>
+                Pilih <strong className="text-emerald-700">All repositories</strong> agar AI Studio dapat mengakses seluruh repositori di akun Anda secara dinamis.
+              </div>
+              <div className="flex-1 bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-[10px]">
+                <strong className="text-gray-900 block">Opsi B (Spesifik):</strong>
+                Pilih <strong className="text-indigo-700">Only select repositories</strong> dan pilih secara manual nama repositori yang Anda tuju untuk menyimpan kode proyek.
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1 pt-2 border-t border-gray-50">
+            <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded uppercase tracking-wider block w-fit">Langkah 3: Persetujuan Organisasi Sekolah (Bila Perlu)</span>
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              Jika repositori disimpan di bawah akun <strong>GitHub Organization</strong> sekolah Anda (bukan akun pribadi), mintalah Pemilik (Owner) Organisasi GitHub tersebut untuk menyetujui (approve/grant) pemasangan <strong>Google AI Studio GitHub App</strong> di halaman setelan organisasi.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-red-100/50 rounded-xl p-2.5 text-[10px] text-red-950 font-medium leading-relaxed">
+          💡 <strong>Tip:</strong> Setelah memberikan izin di atas, silakan <strong>refresh halaman browser</strong> Anda sebelum mencoba mengklik tombol export/sync ulang di pojok kanan atas platform AI Studio.
+        </div>
+      </div>
+
       {/* STATUS & FEEDBACK ALERTS */}
       {statusMessage && (
         <div className={`p-3.5 rounded-2xl text-xs font-semibold border flex items-start space-x-2 animate-fade-in ${
