@@ -320,7 +320,7 @@ export default function StudentValidationDetail({
                     {/* Editable Resolution Note */}
                     <div className="ml-7 space-y-1.5">
                       <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                        Catatan Penyelesaian Profil Peserta Didik (Tampil di Word/Excel):
+                        Catatan Penyelesaian Laporan Penanganan (Tampil di Word/Excel):
                       </label>
                       <div className="relative">
                         <input

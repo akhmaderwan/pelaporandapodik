@@ -629,7 +629,7 @@ export default function App() {
                   }`}
                 >
                   <ClipboardList className="h-4 w-4" />
-                  <span className="font-extrabold">Profil Peserta Didik</span>
+                  <span className="font-extrabold">Laporan Penanganan</span>
                 </button>
 
                 <button

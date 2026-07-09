@@ -79,7 +79,7 @@ export default function StudentFormView({ student, onSave, onCancel }: StudentFo
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h2 className="text-lg font-bold text-gray-900">
-            {isEditing ? 'Ubah Profil Peserta Didik' : 'Tambah Peserta Didik Baru'}
+            {isEditing ? 'Ubah Laporan Penanganan' : 'Tambah Peserta Didik Baru'}
           </h2>
         </div>
         <span className="text-xs font-semibold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full">
