@@ -65,6 +65,10 @@ export default function StudentPortalView({
   const [isAddressGuideOpen, setIsAddressGuideOpen] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
 
+  // States for student self-reported issue / problem notification
+  const [isEditingIssue, setIsEditingIssue] = useState(false);
+  const [tempIssueText, setTempIssueText] = useState('');
+
   const handleCopyAddress = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedAddress(true);
@@ -247,6 +251,16 @@ export default function StudentPortalView({
     }
   }, [formData]);
 
+  // Sync self-reported issue text when student logs in or updates
+  useEffect(() => {
+    if (currentStudent) {
+      setTempIssueText(currentStudent.keteranganMasalah || '');
+    } else {
+      setTempIssueText('');
+      setIsEditingIssue(false);
+    }
+  }, [currentStudent]);
+
   const handleLogout = () => {
     setCurrentStudent(null);
     setFormData(null);
@@ -346,14 +360,6 @@ export default function StudentPortalView({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onExitPortal}
-            className="flex items-center justify-center space-x-1.5 px-4 py-2 bg-teal-900/40 hover:bg-teal-950/40 border border-teal-500/20 hover:border-teal-400/30 rounded-xl text-xs font-bold transition-all text-teal-100 cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Kembali ke Operator</span>
-          </button>
         </div>
       </div>
 
@@ -779,6 +785,269 @@ export default function StudentPortalView({
               </div>
             </div>
           </div>
+
+          {/* NOTIFIKASI LAPORAN PERMASALAHAN MANDIRI SISWA */}
+          {currentStudent && (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden animate-fade-in" id="notifikasi-permasalahan-siswa">
+              <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ShieldAlert className="h-5 w-5 text-teal-600 animate-pulse" />
+                  <h3 className="text-sm font-black text-slate-800 tracking-tight uppercase">
+                    Notifikasi Laporan Permasalahan Mandiri Siswa
+                  </h3>
+                </div>
+                <span className="text-[10px] bg-teal-100/75 text-teal-800 px-2.5 py-0.5 rounded-full font-extrabold font-mono tracking-wider">
+                  SISTEM AUDIT MANDIRI
+                </span>
+              </div>
+
+              <div className="p-6">
+                {currentStudent.keteranganMasalah && currentStudent.keteranganMasalah.trim() !== '' ? (
+                  currentStudent.masalahTertangani ? (
+                    /* 1. STATUS: SUDAH DITANGANI / SELESAI */
+                    <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-5 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-200/40">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                            <CheckCircle2 className="h-5.5 w-5.5" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black text-emerald-900 uppercase tracking-wide">
+                              Status: SELESAI &amp; TERVERIFIKASI
+                            </h4>
+                            <p className="text-[11px] text-emerald-700 font-medium">
+                              Laporan permasalahan data Anda telah berhasil diperbaiki oleh Operator Sekolah.
+                            </p>
+                          </div>
+                        </div>
+                        <span className="self-start sm:self-auto text-[10px] font-extrabold text-white bg-emerald-600 px-3 py-1 rounded-lg tracking-wider">
+                          DAPODIK VALID
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 text-xs">
+                        <span className="font-black text-emerald-900 block uppercase tracking-wider text-[10px]">Laporan Anda:</span>
+                        <blockquote className="bg-white/80 border-l-4 border-emerald-400 p-3 rounded-r-xl italic text-slate-700 font-medium">
+                          "{currentStudent.keteranganMasalah}"
+                        </blockquote>
+                        <p className="text-[10.5px] text-emerald-600 leading-relaxed pt-1">
+                          ✓ Pemutakhiran database lokal dan cloud telah rampung. Jika Anda masih melihat data yang salah di formulir, harap lakukan <b>Refresh</b> halaman web Anda atau sunting ulang di bawah ini.
+                        </p>
+                      </div>
+
+                      <div className="pt-1 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingIssue(true);
+                            setTempIssueText('');
+                          }}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shadow-emerald-100 cursor-pointer"
+                        >
+                          Kirim Laporan Baru
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (window.confirm("Apakah Anda yakin ingin menghapus arsip riwayat laporan ini?")) {
+                              const updated = {
+                                ...currentStudent,
+                                keteranganMasalah: '',
+                                masalahTertangani: false
+                              };
+                              onUpdateStudent(updated);
+                              setCurrentStudent(updated);
+                              if (formData) {
+                                setFormData(prev => prev ? {
+                                  ...prev,
+                                  keteranganMasalah: '',
+                                  masalahTertangani: false
+                                } : null);
+                              }
+                            }
+                          }}
+                          className="px-4 py-2 bg-white hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                        >
+                          Hapus Riwayat Laporan
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* 2. STATUS: SEDANG DIPROSES / ANTRIAN */
+                    <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-5 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-200/40">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                            <Clock className="h-5.5 w-5.5 animate-spin" style={{ animationDuration: '3s' }} />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black text-amber-900 uppercase tracking-wide flex items-center gap-1.5">
+                              <span>Status: SEDANG VERIFIKASI BERKAS</span>
+                              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                            </h4>
+                            <p className="text-[11px] text-amber-700 font-medium">
+                              Laporan telah diterima dan masuk antrean verifikasi berkas luring oleh Operator.
+                            </p>
+                          </div>
+                        </div>
+                        <span className="self-start sm:self-auto text-[10px] font-extrabold text-amber-900 bg-amber-200 border border-amber-300 px-3 py-1 rounded-lg tracking-wider uppercase">
+                          Antrean Audit
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 text-xs">
+                        <span className="font-black text-amber-900 block uppercase tracking-wider text-[10px]">Rincian Masalah yang Dilaporkan:</span>
+                        {isEditingIssue ? (
+                          <div className="space-y-3">
+                            <textarea
+                              rows={3}
+                              value={tempIssueText}
+                              onChange={(e) => setTempIssueText(e.target.value)}
+                              className="w-full px-4 py-2.5 bg-white border border-amber-300 rounded-xl text-xs focus:ring-4 focus:ring-amber-500/10 focus:outline-none focus:border-amber-500 transition-all font-medium resize-none text-slate-800"
+                              placeholder="Ketik deskripsi permasalahan data baru secara detail..."
+                            />
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!tempIssueText.trim()) return;
+                                  const updated = {
+                                    ...currentStudent,
+                                    keteranganMasalah: tempIssueText.trim(),
+                                    masalahTertangani: false
+                                  };
+                                  onUpdateStudent(updated);
+                                  setCurrentStudent(updated);
+                                  if (formData) {
+                                    setFormData(prev => prev ? {
+                                      ...prev,
+                                      keteranganMasalah: tempIssueText.trim(),
+                                      masalahTertangani: false
+                                    } : null);
+                                  }
+                                  setIsEditingIssue(false);
+                                }}
+                                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
+                              >
+                                Simpan Perubahan
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsEditingIssue(false);
+                                  setTempIssueText(currentStudent.keteranganMasalah || '');
+                                }}
+                                className="px-3 py-1.5 bg-white hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-bold rounded-lg transition-all cursor-pointer"
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <blockquote className="bg-white/80 border-l-4 border-amber-400 p-3 rounded-r-xl italic text-slate-700 font-medium">
+                              "{currentStudent.keteranganMasalah}"
+                            </blockquote>
+                            <p className="text-[10.5px] text-amber-600 leading-relaxed pt-1">
+                              💡 <b>Informasi Penting</b>: Harap pastikan Anda telah mengunggah pindaian (scan) Kartu Keluarga (KK) dan Akta Kelahiran yang sah pada menu <b>"Dokumen Pendukung"</b> di sebelah kiri agar verifikasi Anda segera disetujui.
+                            </p>
+                            <div className="pt-2 flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsEditingIssue(true);
+                                  setTempIssueText(currentStudent.keteranganMasalah || '');
+                                }}
+                                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                              >
+                                Ubah Deskripsi Laporan
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (window.confirm("Apakah Anda yakin ingin menarik / menghapus laporan permasalahan mandiri ini?")) {
+                                    const updated = {
+                                      ...currentStudent,
+                                      keteranganMasalah: '',
+                                      masalahTertangani: false
+                                    };
+                                    onUpdateStudent(updated);
+                                    setCurrentStudent(updated);
+                                    if (formData) {
+                                      setFormData(prev => prev ? {
+                                        ...prev,
+                                        keteranganMasalah: '',
+                                        masalahTertangani: false
+                                      } : null);
+                                    }
+                                  }
+                                }}
+                                className="px-4 py-2 bg-white hover:bg-amber-100 border border-amber-200 text-amber-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                              >
+                                Tarik Laporan Saya
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  /* 3. STATUS: BELUM ADA LAPORAN (FORMULIR LAPORAN MANDIRI CEPAT) */
+                  <div className="bg-blue-50/60 border border-blue-200/80 rounded-2xl p-5 space-y-4">
+                    <div className="flex items-start space-x-3.5">
+                      <div className="h-10 w-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0">
+                        <Info className="h-5.5 w-5.5" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-black text-blue-900 uppercase tracking-wide">
+                          Laporkan Permasalahan Data Mandiri Anda
+                        </h4>
+                        <p className="text-[11px] text-blue-700 font-medium leading-relaxed">
+                          Menemukan kesalahan tulis pada nama, NIK, NISN, atau biodata orang tua Anda? Jangan khawatir! Kirimkan detail permasalahan data Anda melalui formulir mandiri cepat di bawah ini agar segera ditinjau dan diperbaiki oleh Operator Sekolah di Dapodik.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <textarea
+                        rows={3}
+                        value={tempIssueText}
+                        onChange={(e) => setTempIssueText(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-xs focus:ring-4 focus:ring-blue-500/10 focus:outline-none focus:border-blue-500 transition-all font-medium resize-none text-slate-800"
+                        placeholder="Contoh: Nama Ibu Kandung saya kurang huruf 'A' di bagian tengah, tertulis NURAINI seharusnya NURAINIA sesuai KK..."
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!tempIssueText.trim()) return;
+                          const updated = {
+                            ...currentStudent,
+                            keteranganMasalah: tempIssueText.trim(),
+                            masalahTertangani: false
+                          };
+                          onUpdateStudent(updated);
+                          setCurrentStudent(updated);
+                          if (formData) {
+                            setFormData(prev => prev ? {
+                              ...prev,
+                              keteranganMasalah: tempIssueText.trim(),
+                              masalahTertangani: false
+                            } : null);
+                          }
+                          setTempIssueText('');
+                        }}
+                        className="flex items-center space-x-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-100 cursor-pointer"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Kirim Laporan Permasalahan Mandiri</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
