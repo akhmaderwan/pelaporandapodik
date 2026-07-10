@@ -4,7 +4,7 @@ import { validateStudent } from '../validationEngine';
 import { 
   Search, Plus, Edit2, Trash2, SlidersHorizontal, CheckCircle2, 
   AlertTriangle, Eye, Sparkles, Filter, UserMinus, ChevronRight,
-  Bell, MessageSquare, ArrowRight, FileSpreadsheet
+  Bell, MessageSquare, ArrowRight, FileSpreadsheet, GraduationCap, UserCheck
 } from 'lucide-react';
 import ExcelImporter from './ExcelImporter';
 
@@ -15,6 +15,7 @@ interface StudentDirectoryProps {
   onDeleteStudent: (id: string) => void;
   onSelectStudent: (student: Student) => void; // Trigger detailed view & validation
   onUpdateStudent?: (student: Student) => void;
+  onUpdateStudents?: (updatedStudents: Student[]) => void;
   onImportStudents?: (importedStudents: Student[], overwriteDuplicates: boolean) => void;
 }
 
@@ -25,12 +26,17 @@ export default function StudentDirectory({
   onDeleteStudent,
   onSelectStudent,
   onUpdateStudent,
+  onUpdateStudents,
   onImportStudents
 }: StudentDirectoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Valid', 'Error'
   const [showImporter, setShowImporter] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showBulkGraduateModal, setShowBulkGraduateModal] = useState(false);
+  const [selectedClassForGraduation, setSelectedClassForGraduation] = useState('All');
+  const [graduationStatusFilter, setGraduationStatusFilter] = useState<'Aktif' | 'Semua'>('Aktif');
 
   // Get unique classes for filter
   const classes = Array.from(new Set(students.map(s => s.rombonganBelajar))).filter(Boolean).sort();
@@ -57,6 +63,41 @@ export default function StudentDirectory({
 
     return matchesSearch && matchesClass && matchesStatus;
   });
+
+  const handleBulkGraduateSelected = (ids: string[]) => {
+    const studentsToUpdate = students.filter(s => ids.includes(s.id));
+    const updated = studentsToUpdate.map(student => ({
+      ...student,
+      statusSiswa: 'Lulus' as const
+    }));
+
+    if (onUpdateStudents) {
+      onUpdateStudents(updated);
+    } else {
+      updated.forEach(s => onUpdateStudent?.(s));
+    }
+    setSelectedIds([]);
+  };
+
+  const handleBulkGraduateClass = (className: string, onlyActive: boolean) => {
+    const studentsInClass = students.filter(student => {
+      const matchesClass = className === 'All' || student.rombonganBelajar === className;
+      const matchesActive = !onlyActive || student.statusSiswa === 'Aktif';
+      return matchesClass && matchesActive;
+    });
+
+    const updated = studentsInClass.map(student => ({
+      ...student,
+      statusSiswa: 'Lulus' as const
+    }));
+
+    if (onUpdateStudents) {
+      onUpdateStudents(updated);
+    } else {
+      updated.forEach(s => onUpdateStudent?.(s));
+    }
+    setShowBulkGraduateModal(false);
+  };
 
   const studentsWithReportedIssues = students.filter(s => s.keteranganMasalah && s.keteranganMasalah.trim() !== '');
   const pendingIssuesCount = studentsWithReportedIssues.filter(s => !s.masalahTertangani).length;
@@ -202,6 +243,36 @@ export default function StudentDirectory({
       )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" id="student-directory-container">
+        {selectedIds.length > 0 && (
+          <div className="bg-amber-50/80 border-b border-amber-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-fade-in" id="bulk-graduate-banner">
+            <div className="flex items-center space-x-2">
+              <span className="p-1.5 bg-amber-100 text-amber-800 rounded-lg">
+                <UserCheck className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-semibold text-amber-900">
+                Terpilih <span className="font-extrabold underline">{selectedIds.length} siswa</span> untuk tindakan massal.
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                className="px-3 py-1.5 text-xs font-bold text-gray-600 hover:text-gray-800 rounded-lg transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkGraduateSelected(selectedIds)}
+                className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-sm shadow-amber-100"
+              >
+                <GraduationCap className="h-4 w-4" />
+                <span>Luluskan Terpilih Bersama</span>
+              </button>
+            </div>
+          </div>
+        )}
+
       {/* Search & Filter Header */}
       <div className="p-6 border-b border-gray-100 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -217,6 +288,14 @@ export default function StudentDirectory({
             >
               <FileSpreadsheet className="h-4.5 w-4.5 text-emerald-600" />
               <span>Impor Excel</span>
+            </button>
+            <button
+              id="btn-bulk-graduate"
+              onClick={() => setShowBulkGraduateModal(true)}
+              className="flex items-center justify-center space-x-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/60 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer shadow-sm transform active:scale-98 flex-1 sm:flex-initial"
+            >
+              <GraduationCap className="h-4.5 w-4.5 text-amber-600" />
+              <span>Luluskan Bersama</span>
             </button>
             <button
               id="btn-add-student"
@@ -285,6 +364,20 @@ export default function StudentDirectory({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50/70 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <th className="py-4 px-6 w-12 text-center">
+                <input
+                  type="checkbox"
+                  checked={filteredStudents.length > 0 && selectedIds.length === filteredStudents.length}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds(filteredStudents.map(s => s.id));
+                    } else {
+                      setSelectedIds([]);
+                    }
+                  }}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-200 rounded cursor-pointer transition-all"
+                />
+              </th>
               <th className="py-4 px-6">Nama Peserta Didik</th>
               <th className="py-4 px-6 hidden md:table-cell">NISN</th>
               <th className="py-4 px-6 hidden lg:table-cell">NIK</th>
@@ -296,7 +389,7 @@ export default function StudentDirectory({
           <tbody className="divide-y divide-gray-50">
             {filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center">
+                <td colSpan={7} className="py-12 text-center">
                   <div className="max-w-md mx-auto flex flex-col items-center">
                     <div className="bg-gray-50 p-4 rounded-full mb-3 text-gray-400">
                       <UserMinus className="h-8 w-8" />
@@ -319,6 +412,20 @@ export default function StudentDirectory({
                     key={student.id} 
                     className="hover:bg-gray-50/50 transition-all group"
                   >
+                    <td className="py-4 px-6 text-center w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(student.id)}
+                        onChange={() => {
+                          if (selectedIds.includes(student.id)) {
+                            setSelectedIds(selectedIds.filter(id => id !== student.id));
+                          } else {
+                            setSelectedIds([...selectedIds, student.id]);
+                          }
+                        }}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-200 rounded cursor-pointer transition-all"
+                      />
+                    </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-3">
                         <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm ${
@@ -435,6 +542,116 @@ export default function StudentDirectory({
         </div>
       </div>
     </div>
+
+      {showBulkGraduateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs animate-fade-in" id="bulk-graduate-modal">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl max-w-lg w-full overflow-hidden transform transition-all scale-100 animate-scale-up">
+            <div className="p-6 pb-4">
+              <div className="mx-auto h-12 w-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 mb-4">
+                <GraduationCap className="h-6 w-6" />
+              </div>
+              <div className="text-center space-y-2 mb-6">
+                <h3 className="text-base font-extrabold text-gray-900">Luluskan Siswa Secara Bersama</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Gunakan menu ini untuk meluluskan sekelompok peserta didik sekaligus. Anda dapat meluluskan seluruh rombongan belajar (rombel) atau seluruh sekolah secara serentak.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Select Rombel */}
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pilih Rombongan Belajar (Rombel)</label>
+                  <select
+                    value={selectedClassForGraduation}
+                    onChange={(e) => setSelectedClassForGraduation(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-amber-500 focus:bg-white text-gray-900 rounded-xl px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-amber-100 font-medium"
+                  >
+                    <option value="All">Semua Rombongan Belajar</option>
+                    {classes.map(cl => (
+                      <option key={cl} value={cl}>{cl}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filter Status */}
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Hanya Siswa Dengan Status</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setGraduationStatusFilter('Aktif')}
+                      className={`flex-1 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        graduationStatusFilter === 'Aktif'
+                          ? 'bg-amber-600 text-white border-amber-600 shadow-sm shadow-amber-100'
+                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      Hanya Siswa Aktif
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGraduationStatusFilter('Semua')}
+                      className={`flex-1 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        graduationStatusFilter === 'Semua'
+                          ? 'bg-amber-600 text-white border-amber-600 shadow-sm shadow-amber-100'
+                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      Semua Siswa
+                    </button>
+                  </div>
+                </div>
+
+                {/* Summary Box */}
+                {(() => {
+                  const targetStudents = students.filter(student => {
+                    const matchesClass = selectedClassForGraduation === 'All' || student.rombonganBelajar === selectedClassForGraduation;
+                    const matchesStatus = graduationStatusFilter === 'Semua' || student.statusSiswa === 'Aktif';
+                    return matchesClass && matchesStatus;
+                  });
+
+                  return (
+                    <div className="bg-amber-50/50 border border-amber-200/50 rounded-2xl p-4 space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-semibold text-gray-500">Estimasi Jumlah Siswa Terimbas:</span>
+                        <span className="font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md">
+                          {targetStudents.length} siswa
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-amber-800 leading-relaxed font-medium">
+                        *Tindakan ini akan merubah status siswa di atas menjadi <span className="font-bold underline">Lulus</span> secara massal di Cloud Firestore & Cache Lokal Anda.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkGraduateModal(false)}
+                    className="px-4 py-2.5 text-xs font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBulkGraduateClass(selectedClassForGraduation, graduationStatusFilter === 'Aktif')}
+                    disabled={students.filter(student => {
+                      const matchesClass = selectedClassForGraduation === 'All' || student.rombonganBelajar === selectedClassForGraduation;
+                      const matchesStatus = graduationStatusFilter === 'Semua' || student.statusSiswa === 'Aktif';
+                      return matchesClass && matchesStatus;
+                    }).length === 0}
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-amber-100 transition-all cursor-pointer transform active:scale-98 flex items-center space-x-1.5"
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    <span>Luluskan Sekarang</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
