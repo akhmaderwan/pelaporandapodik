@@ -291,9 +291,33 @@ export default function ExcelImporter({ onImport, onCancel, existingStudents }: 
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // Helper to deeply compare and match students to prevent duplicate entries
+  const isSameStudent = (s1: Student, s2: Student): boolean => {
+    // 1. Match by NISN if both have valid non-empty NISN
+    if (s1.nisn && s2.nisn && s1.nisn.trim() !== '' && s2.nisn.trim() !== '') {
+      if (s1.nisn.trim() === s2.nisn.trim()) return true;
+    }
+    
+    // 2. Match by NIK if both have valid non-empty NIK
+    if (s1.nik && s2.nik && s1.nik.trim() !== '' && s2.nik.trim() !== '') {
+      if (s1.nik.trim() === s2.nik.trim()) return true;
+    }
+    
+    // 3. Match by Name & Tanggal Lahir (case-insensitive, trimmed)
+    if (s1.nama && s2.nama && s1.tanggalLahir && s2.tanggalLahir) {
+      const name1 = s1.nama.trim().toLowerCase().replace(/\s+/g, ' ');
+      const name2 = s2.nama.trim().toLowerCase().replace(/\s+/g, ' ');
+      const dob1 = s1.tanggalLahir.trim();
+      const dob2 = s2.tanggalLahir.trim();
+      if (name1 === name2 && dob1 === dob2) return true;
+    }
+    
+    return false;
+  };
+
   // Compute duplicate checks
   const duplicatesCount = validatedStudents.filter(v => 
-    existingStudents.some(es => es.nisn === v.student.nisn && es.nisn !== '')
+    existingStudents.some(es => isSameStudent(es, v.student))
   ).length;
 
   return (
@@ -459,7 +483,7 @@ export default function ExcelImporter({ onImport, onCancel, existingStudents }: 
               </thead>
               <tbody className="divide-y divide-gray-50 text-gray-700">
                 {validatedStudents.map(({ student, errors }, idx) => {
-                  const isDuplicate = existingStudents.some(es => es.nisn === student.nisn && es.nisn !== '');
+                  const isDuplicate = existingStudents.some(es => isSameStudent(es, student));
                   return (
                     <tr key={idx} className={`hover:bg-slate-50/50 transition-all ${isDuplicate ? 'bg-amber-50/20' : ''}`}>
                       <td className="px-4 py-3 font-semibold text-gray-900">

@@ -368,25 +368,57 @@ export default function App() {
     let updatedCount = 0;
     let skippedCount = 0;
 
+    // Helper to deeply compare and match students to prevent duplicate entries
+    const isSameStudent = (s1: Student, s2: Student): boolean => {
+      // 1. Match by NISN if both have valid non-empty NISN
+      if (s1.nisn && s2.nisn && s1.nisn.trim() !== '' && s2.nisn.trim() !== '') {
+        if (s1.nisn.trim() === s2.nisn.trim()) return true;
+      }
+      
+      // 2. Match by NIK if both have valid non-empty NIK
+      if (s1.nik && s2.nik && s1.nik.trim() !== '' && s2.nik.trim() !== '') {
+        if (s1.nik.trim() === s2.nik.trim()) return true;
+      }
+      
+      // 3. Match by Name & Tanggal Lahir (case-insensitive, trimmed)
+      if (s1.nama && s2.nama && s1.tanggalLahir && s2.tanggalLahir) {
+        const name1 = s1.nama.trim().toLowerCase().replace(/\s+/g, ' ');
+        const name2 = s2.nama.trim().toLowerCase().replace(/\s+/g, ' ');
+        const dob1 = s1.tanggalLahir.trim();
+        const dob2 = s2.tanggalLahir.trim();
+        if (name1 === name2 && dob1 === dob2) return true;
+      }
+      
+      return false;
+    };
+
     imported.forEach(newStudent => {
-      // Find if student with same NISN already exists
-      const existingIdx = newStudent.nisn 
-        ? updated.findIndex(s => s.nisn === newStudent.nisn) 
-        : -1;
+      // Find if student already exists using robust matching (NISN, NIK, or Name + DoB)
+      const existingIdx = updated.findIndex(s => isSameStudent(s, newStudent));
 
       if (existingIdx !== -1) {
         if (overwriteDuplicates) {
           const existing = updated[existingIdx];
+          
+          // Overwrite with imported data but:
+          // 1. Update the class (tingkatKelas and rombonganBelajar)
+          // 2. Keep status as 'Lulus' if they were already graduated, so they don't become 'Aktif'
+          // 3. Preserve the original database ID
           updated[existingIdx] = {
             ...existing,
             ...newStudent,
+            statusSiswa: existing.statusSiswa === 'Lulus' ? 'Lulus' : (newStudent.statusSiswa || existing.statusSiswa),
             id: existing.id // preserve original system ID
           };
           updatedCount++;
         } else {
+          // If overwrite duplicates is false, but we explicitly want class updates
+          // we can still update class if needed, but to respect the toggle, let's keep it skipped
+          // while ensuring NO duplicate record is added.
           skippedCount++;
         }
       } else {
+        // Safe to add as a new student
         updated.unshift(newStudent);
         addedCount++;
       }
