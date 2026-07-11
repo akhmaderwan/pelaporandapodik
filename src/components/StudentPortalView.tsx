@@ -347,7 +347,14 @@ export default function StudentPortalView({
     <div className="space-y-6" id="student-portal-wrapper">
       
       {/* 1. PORTAL HEADER BANNER */}
-      <div className="bg-gradient-to-r from-teal-700 to-cyan-800 rounded-2xl p-6 text-white shadow-md border border-teal-600/30">
+      <div 
+        className="bg-gradient-to-r from-teal-700 to-cyan-800 rounded-2xl p-6 text-white shadow-md border border-teal-600/30 relative overflow-hidden"
+        style={schoolProfile.useCustomBackground && schoolProfile.backgroundUrl ? {
+          backgroundImage: `linear-gradient(rgba(15, 118, 110, 0.82), rgba(21, 94, 117, 0.92)), url(${schoolProfile.backgroundUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        } : undefined}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className="bg-white/15 p-3 rounded-xl backdrop-blur-md">
@@ -765,7 +772,14 @@ export default function StudentPortalView({
         /* 3. LOGGED-IN PORTAL INTERFACE */
         <div className="space-y-6 animate-fade-in" id="student-portal-dashboard">
           {/* Welcome/Halaman Title Banner */}
-          <div className="bg-gradient-to-r from-teal-700 via-teal-600 to-cyan-600 rounded-2xl shadow-sm text-white p-6 relative overflow-hidden">
+          <div 
+            className="bg-gradient-to-r from-teal-700 via-teal-600 to-cyan-600 rounded-2xl shadow-sm text-white p-6 relative overflow-hidden"
+            style={schoolProfile.useCustomBackground && schoolProfile.backgroundUrl ? {
+              backgroundImage: `linear-gradient(rgba(15, 118, 110, 0.82), rgba(21, 94, 117, 0.92)), url(${schoolProfile.backgroundUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            } : undefined}
+          >
             <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>
             <div className="absolute left-0 bottom-0 -translate-x-12 translate-y-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">

@@ -226,7 +226,7 @@ export default function ReportViewer({
          <table style="width: 100%;">
            <tr>
              <td colspan="${totalCols}" style="text-align: center; padding-bottom: 15px;">
-               <img src="${kopForExport}" width="750" style="width: 750px; display: block; margin: 0 auto;" />
+               <img src="img/kop.jpg" width="750" style="width: 750px; display: block; margin: 0 auto;" />
              </td>
            </tr>
            <tr><td colspan="${totalCols}"></td></tr>
@@ -246,7 +246,7 @@ export default function ReportViewer({
            <tr>
              ${logoForExport ? `
                <td rowspan="3" style="width: 80px; text-align: center; vertical-align: middle;">
-                 <img src="${logoForExport}" width="75" height="75" style="width: 75px; height: 75px; display: block; margin: 0 auto;" />
+                 <img src="img/logo.jpg" width="75" height="75" style="width: 75px; height: 75px; display: block; margin: 0 auto;" />
                </td>
              ` : ''}
              <td colspan="${colSpanVal}" class="header-title">${schoolProfile.namaSekolah.toUpperCase()}</td>
@@ -306,7 +306,18 @@ export default function ReportViewer({
       </html>
     `;
 
-    const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const images: { [key: string]: { mime: string; base64: string } } = {};
+    if (logoForExport) {
+      const parsed = parseDataUrl(logoForExport);
+      if (parsed) images['img/logo.jpg'] = parsed;
+    }
+    if (kopForExport) {
+      const parsed = parseDataUrl(kopForExport);
+      if (parsed) images['img/kop.jpg'] = parsed;
+    }
+
+    const mhtmlContent = buildMhtml(htmlContent, images);
+    const blob = new Blob([mhtmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

@@ -17,6 +17,8 @@ export interface SchoolProfile {
   runningText?: string;
   kopLaporanUrl?: string;
   useKopGambar?: boolean;
+  backgroundUrl?: string;
+  useCustomBackground?: boolean;
 }
 
 export interface Student {

@@ -427,12 +427,19 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-800 font-sans flex flex-col antialiased relative overflow-hidden">
-      {/* Background Watermark Logo */}
-      <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-0 opacity-[0.16] p-6 md:p-12">
-        <div className="w-full h-full max-w-[680px] max-h-[680px] flex items-center justify-center">
-          <Sman2Logo size="100%" />
+      {/* Background Watermark Logo or Custom Background */}
+      {schoolProfile.useCustomBackground && schoolProfile.backgroundUrl ? (
+        <div 
+          className="fixed inset-0 pointer-events-none z-0 opacity-[0.06] transition-all duration-500 bg-cover bg-center"
+          style={{ backgroundImage: `url(${schoolProfile.backgroundUrl})` }}
+        />
+      ) : (
+        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-0 opacity-[0.16] p-6 md:p-12">
+          <div className="w-full h-full max-w-[680px] max-h-[680px] flex items-center justify-center">
+            <Sman2Logo size="100%" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 1. TOP EXECUTIVE KEMENDIKBUD-ACCENTED HEADER */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-xs">

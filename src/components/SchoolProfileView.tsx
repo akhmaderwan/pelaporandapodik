@@ -216,6 +216,71 @@ export default function SchoolProfileView({ profile, onSave }: SchoolProfileView
     }
   };
 
+  const [bgDragActive, setBgDragActive] = useState(false);
+
+  const handleBgDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setBgDragActive(true);
+    } else if (e.type === "dragleave") {
+      setBgDragActive(false);
+    }
+  };
+
+  const handleBgDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setBgDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    processUploadedBgFile(file);
+  };
+
+  const handleBgFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    processUploadedBgFile(file);
+  };
+
+  const processUploadedBgFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Format file tidak didukung. Harap pilih file gambar (PNG, JPG, JPEG, atau WebP).');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran file terlalu besar. Batas maksimal adalah 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Data = event.target?.result as string;
+      setFormData(prev => ({
+        ...prev,
+        backgroundUrl: base64Data,
+        useCustomBackground: true
+      }));
+      setIsSaved(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearBg = () => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus gambar latar belakang kustom?')) {
+      setFormData(prev => ({
+        ...prev,
+        backgroundUrl: '',
+        useCustomBackground: false
+      }));
+      setIsSaved(false);
+    }
+  };
+
   // Sync built logo to form data when builder settings change
   useEffect(() => {
     if (logoSource === 'builder') {
@@ -903,6 +968,134 @@ export default function SchoolProfileView({ profile, onSave }: SchoolProfileView
                     <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                     <span>
                       Saat ini sistem menggunakan format <strong>Kop Teks Standar otomatis</strong>. Logo sekolah dan rincian identitas utama (Nama Sekolah, Alamat, NPSN) di samping akan otomatis disusun menjadi Kepala Surat / Kop Surat dinas pada setiap cetakan dokumen Word/Excel.
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Custom Background Section */}
+            <div className="space-y-4 text-left" id="custom-background-section">
+              <h3 className="text-base font-semibold text-gray-800 flex items-center space-x-2 border-b border-gray-100 pb-2">
+                <ImageIcon className="h-5 w-5 text-indigo-600" />
+                <span>Gambar Latar Belakang (Background) Portal & Aplikasi</span>
+              </h3>
+              
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-gray-700 block">Gunakan Latar Belakang Kustom</span>
+                    <span className="text-[10px] text-gray-400">Aktifkan untuk menerapkan gambar kustom sebagai latar belakang portal mandiri siswa dan watermark aplikasi</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 bg-white p-1 rounded-lg border border-gray-200 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, useCustomBackground: false }));
+                        setIsSaved(false);
+                      }}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                        !formData.useCustomBackground
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Bawaan Sistem
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, useCustomBackground: true }));
+                        setIsSaved(false);
+                      }}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                        formData.useCustomBackground
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Kustom Aktif
+                    </button>
+                  </div>
+                </div>
+
+                {formData.useCustomBackground ? (
+                  <div className="space-y-4 animate-fade-in">
+                    {/* Background Preview */}
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Pratinjau Latar Belakang</span>
+                      {formData.backgroundUrl ? (
+                        <div className="relative bg-white rounded-xl border border-gray-200 p-2 overflow-hidden shadow-xs">
+                          <div className="w-full h-36 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center relative">
+                            <img 
+                              src={formData.backgroundUrl} 
+                              alt="Pratinjau Latar Belakang" 
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 bg-black/15 flex items-center justify-center">
+                              <span className="text-xs font-bold text-white bg-black/55 px-2.5 py-1 rounded-md backdrop-blur-xs">
+                                Mode Kustom Aktif
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleClearBg}
+                            className="absolute top-4 right-4 p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all cursor-pointer shadow-xs"
+                            title="Hapus Latar Belakang"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-200 rounded-xl bg-white p-6 text-center text-gray-400 flex flex-col items-center justify-center">
+                          <ImageIcon className="h-10 w-10 stroke-1 text-gray-300 mb-2" />
+                          <span className="text-xs font-semibold">Belum Ada Gambar Latar Belakang</span>
+                          <span className="text-[10px] text-gray-400 mt-1">Unggah berkas di bawah untuk menampilkan latar belakang kustom</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Drag and Drop Zone */}
+                    <div
+                      onDragEnter={handleBgDrag}
+                      onDragOver={handleBgDrag}
+                      onDragLeave={handleBgDrag}
+                      onDrop={handleBgDrop}
+                      className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                        bgDragActive 
+                          ? 'border-blue-500 bg-blue-50/50' 
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        id="bg-file-picker"
+                        accept="image/*"
+                        onChange={handleBgFileChange}
+                        className="hidden"
+                      />
+                      <label htmlFor="bg-file-picker" className="cursor-pointer block space-y-2">
+                        <div className="mx-auto h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500">
+                          <Upload className="h-5 w-5" />
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-bold text-indigo-600 hover:underline">Klik untuk pilih berkas</span> atau seret gambar latar ke sini
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-normal">
+                          Mendukung PNG, JPG, JPEG, atau WebP (Maks. 2MB)<br />
+                          Rekomendasi gambar landscape (contoh: 1920 x 1080 piksel)
+                        </p>
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-xs text-blue-700 leading-relaxed flex items-start space-x-2">
+                    <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                    <span>
+                      Saat ini sistem menggunakan format <strong>Latar Belakang Bawaan</strong> (warna solid minimalis dengan watermark logo transparan di tengah layar).
                     </span>
                   </div>
                 )}

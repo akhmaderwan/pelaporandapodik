@@ -16,7 +16,9 @@ export const DEFAULT_SCHOOL_PROFILE: SchoolProfile = {
   nipOperator: "198902142018011002",
   emailSekolah: "sman2pasuruan@sch.id",
   logoUrl: "",
-  runningText: "PENGUMUMAN: Harap semua peserta didik SMA Negeri 2 Kota Pasuruan segera memeriksa kelayakan data masing-masing menggunakan fitur perbaikan mandiri ini. Sinkronisasi Dapodik terakhir dilakukan tanggal 30 Juni 2026."
+  runningText: "PENGUMUMAN: Harap semua peserta didik SMA Negeri 2 Kota Pasuruan segera memeriksa kelayakan data masing-masing menggunakan fitur perbaikan mandiri ini. Sinkronisasi Dapodik terakhir dilakukan tanggal 30 Juni 2026.",
+  backgroundUrl: "",
+  useCustomBackground: false
 };
 
 export const DEFAULT_STUDENTS: Student[] = [

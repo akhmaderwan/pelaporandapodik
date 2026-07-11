@@ -79,6 +79,21 @@ export default function StudentDirectory({
     setSelectedIds([]);
   };
 
+  const handleBulkCancelGraduateSelected = (ids: string[]) => {
+    const studentsToUpdate = students.filter(s => ids.includes(s.id));
+    const updated = studentsToUpdate.map(student => ({
+      ...student,
+      statusSiswa: 'Aktif' as const
+    }));
+
+    if (onUpdateStudents) {
+      onUpdateStudents(updated);
+    } else {
+      updated.forEach(s => onUpdateStudent?.(s));
+    }
+    setSelectedIds([]);
+  };
+
   const handleBulkGraduateClass = (className: string, onlyActive: boolean) => {
     const studentsInClass = students.filter(student => {
       const matchesClass = className === 'All' || student.rombonganBelajar === className;
@@ -89,6 +104,26 @@ export default function StudentDirectory({
     const updated = studentsInClass.map(student => ({
       ...student,
       statusSiswa: 'Lulus' as const
+    }));
+
+    if (onUpdateStudents) {
+      onUpdateStudents(updated);
+    } else {
+      updated.forEach(s => onUpdateStudent?.(s));
+    }
+    setShowBulkGraduateModal(false);
+  };
+
+  const handleBulkCancelGraduateClass = (className: string, onlyGraduated: boolean) => {
+    const studentsInClass = students.filter(student => {
+      const matchesClass = className === 'All' || student.rombonganBelajar === className;
+      const matchesGraduated = !onlyGraduated || student.statusSiswa === 'Lulus';
+      return matchesClass && matchesGraduated;
+    });
+
+    const updated = studentsInClass.map(student => ({
+      ...student,
+      statusSiswa: 'Aktif' as const
     }));
 
     if (onUpdateStudents) {
@@ -260,6 +295,14 @@ export default function StudentDirectory({
                 className="px-3 py-1.5 text-xs font-bold text-gray-600 hover:text-gray-800 rounded-lg transition-all cursor-pointer"
               >
                 Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkCancelGraduateSelected(selectedIds)}
+                className="flex items-center space-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs border border-gray-200"
+              >
+                <UserCheck className="h-4 w-4" />
+                <span>Batalkan Kelulusan</span>
               </button>
               <button
                 type="button"
@@ -625,7 +668,7 @@ export default function StudentDirectory({
                   );
                 })()}
 
-                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-100">
+                <div className="flex flex-wrap items-center justify-end gap-2.5 pt-4 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => setShowBulkGraduateModal(false)}
@@ -635,13 +678,25 @@ export default function StudentDirectory({
                   </button>
                   <button
                     type="button"
+                    onClick={() => handleBulkCancelGraduateClass(selectedClassForGraduation, true)}
+                    disabled={students.filter(student => {
+                      const matchesClass = selectedClassForGraduation === 'All' || student.rombonganBelajar === selectedClassForGraduation;
+                      return matchesClass && student.statusSiswa === 'Lulus';
+                    }).length === 0}
+                    className="px-4 py-2.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/60 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer transform active:scale-98 flex items-center space-x-1.5"
+                  >
+                    <UserCheck className="h-4 w-4 text-amber-600" />
+                    <span>Batalkan Kelulusan</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleBulkGraduateClass(selectedClassForGraduation, graduationStatusFilter === 'Aktif')}
                     disabled={students.filter(student => {
                       const matchesClass = selectedClassForGraduation === 'All' || student.rombonganBelajar === selectedClassForGraduation;
                       const matchesStatus = graduationStatusFilter === 'Semua' || student.statusSiswa === 'Aktif';
                       return matchesClass && matchesStatus;
                     }).length === 0}
-                    className="px-5 py-2.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-amber-100 transition-all cursor-pointer transform active:scale-98 flex items-center space-x-1.5"
+                    className="px-4 py-2.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-amber-100 transition-all cursor-pointer transform active:scale-98 flex items-center space-x-1.5"
                   >
                     <GraduationCap className="h-4 w-4" />
                     <span>Luluskan Sekarang</span>
