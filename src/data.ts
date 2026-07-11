@@ -18,7 +18,9 @@ export const DEFAULT_SCHOOL_PROFILE: SchoolProfile = {
   logoUrl: "",
   runningText: "PENGUMUMAN: Harap semua peserta didik SMA Negeri 2 Kota Pasuruan segera memeriksa kelayakan data masing-masing menggunakan fitur perbaikan mandiri ini. Sinkronisasi Dapodik terakhir dilakukan tanggal 30 Juni 2026.",
   backgroundUrl: "",
-  useCustomBackground: false
+  useCustomBackground: false,
+  themeColor: "#0f766e",
+  useCustomColor: false
 };
 
 export const DEFAULT_STUDENTS: Student[] = [

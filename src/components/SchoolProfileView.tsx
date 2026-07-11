@@ -3,8 +3,9 @@ import { SchoolProfile } from '../types';
 import { 
   Building2, Save, Check, Award, MapPin, User, Mail, 
   Upload, Sparkles, RefreshCw, Trash2, HelpCircle, GraduationCap,
-  BookOpen, Star, Globe, Landmark, ImageIcon
+  BookOpen, Star, Globe, Landmark, ImageIcon, Palette
 } from 'lucide-react';
+import { isLightColor } from '../utils/colorUtils';
 
 interface SchoolProfileViewProps {
   profile: SchoolProfile;
@@ -1096,6 +1097,162 @@ export default function SchoolProfileView({ profile, onSave }: SchoolProfileView
                     <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                     <span>
                       Saat ini sistem menggunakan format <strong>Latar Belakang Bawaan</strong> (warna solid minimalis dengan watermark logo transparan di tengah layar).
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Custom Theme Color Section */}
+            <div className="space-y-4 text-left animate-fade-in" id="custom-theme-color-section">
+              <h3 className="text-base font-semibold text-gray-800 flex items-center space-x-2 border-b border-gray-100 pb-2">
+                <Palette className="h-5 w-5 text-indigo-600" />
+                <span>Warna Tema & Latar Belakang Bawaan</span>
+              </h3>
+              
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-gray-700 block">Gunakan Warna Tema Kustom</span>
+                    <span className="text-[10px] text-gray-400">Aktifkan untuk menerapkan warna khusus pada tajuk banner portal siswa, tombol utama, dan latar belakang bawaan</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 bg-white p-1 rounded-lg border border-gray-200 self-start sm:self-auto shadow-3xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, useCustomColor: false, themeColor: "#0f766e" }));
+                        setIsSaved(false);
+                      }}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                        !formData.useCustomColor
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Bawaan (Teal)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, useCustomColor: true }));
+                        setIsSaved(false);
+                      }}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                        formData.useCustomColor
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Warna Kustom
+                    </button>
+                  </div>
+                </div>
+
+                {formData.useCustomColor ? (
+                  <div className="space-y-4 animate-fade-in">
+                    {/* Preset colors & Color Picker */}
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Pilih Warna Preset atau Custom</span>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Preset color blocks */}
+                        <div className="flex flex-wrap gap-2.5 bg-white p-3 rounded-xl border border-gray-200">
+                          {[
+                            { name: 'Teal Bawaan', hex: '#0f766e' },
+                            { name: 'Biru Royal', hex: '#1e40af' },
+                            { name: 'Indigo Premium', hex: '#4338ca' },
+                            { name: 'Smaragd Hijau', hex: '#047857' },
+                            { name: 'Merah Berani', hex: '#b91c1c' },
+                            { name: 'Slate Modern', hex: '#334155' },
+                            { name: 'Amber Oranye', hex: '#b45309' },
+                            { name: 'Ungu Elegan', hex: '#6d28d9' },
+                            { name: 'Pink Menawan', hex: '#be185d' },
+                            { name: 'Kuning Terang', hex: '#eab308' },
+                            { name: 'Putih Bersih', hex: '#ffffff' },
+                            { name: 'Hitam Gelap', hex: '#121212' },
+                          ].map((preset) => {
+                            const isSelected = formData.themeColor === preset.hex;
+                            return (
+                              <button
+                                key={preset.hex}
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, themeColor: preset.hex }));
+                                  setIsSaved(false);
+                                }}
+                                className="flex items-center space-x-1.5 p-1 rounded-lg border border-gray-200 bg-gray-50 hover:bg-white hover:border-gray-300 transition-all cursor-pointer text-[10px] font-medium"
+                                style={{ outline: isSelected ? '2.5px solid #2563eb' : 'none' }}
+                                title={`${preset.name} (${preset.hex})`}
+                              >
+                                <span 
+                                  className="w-3.5 h-3.5 rounded-sm border border-gray-300 shrink-0"
+                                  style={{ backgroundColor: preset.hex }}
+                                />
+                                <span className="pr-1 text-gray-600 truncate max-w-[80px]">{preset.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Custom Hex Color Picker */}
+                        <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex flex-col justify-between gap-3 shadow-3xs">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="color"
+                                id="theme-color-picker"
+                                value={formData.themeColor || '#0f766e'}
+                                onChange={(e) => {
+                                  setFormData(prev => ({ ...prev, themeColor: e.target.value }));
+                                  setIsSaved(false);
+                                }}
+                                className="w-12 h-12 rounded-xl border border-gray-300 cursor-pointer p-0.5 shrink-0"
+                              />
+                              <div>
+                                <span className="text-xs font-bold text-gray-700 block">Pilih Warna Bebas</span>
+                                <input
+                                  type="text"
+                                  value={formData.themeColor || ''}
+                                  onChange={(e) => {
+                                    setFormData(prev => ({ ...prev, themeColor: e.target.value }));
+                                    setIsSaved(false);
+                                  }}
+                                  placeholder="#000000"
+                                  className="text-xs font-mono border border-gray-300 rounded px-2.5 py-1 w-24 uppercase mt-1 focus:outline-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Dynamic Readability Indicator */}
+                          <div className="flex items-center justify-between bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                            <div>
+                              <span className="text-[10px] text-gray-400 font-bold block mb-0.5">Keterbacaan Teks</span>
+                              <span className="text-[9px] text-gray-500 leading-tight block">
+                                Otomatis menggunakan {isLightColor(formData.themeColor) ? 'Teks Gelap' : 'Teks Terang'} untuk menjamin kontras & mudah dibaca.
+                              </span>
+                            </div>
+                            <div 
+                              className="px-3.5 py-2 rounded-lg text-xs font-black shadow-3xs shrink-0 text-center transition-all duration-300"
+                              style={{ 
+                                backgroundColor: formData.themeColor || '#0f766e', 
+                                color: isLightColor(formData.themeColor) ? '#0f172a' : '#ffffff',
+                                border: isLightColor(formData.themeColor) ? '1px solid rgba(15, 23, 42, 0.15)' : '1px solid rgba(255, 255, 255, 0.15)'
+                              }}
+                            >
+                              Halo Siswa!
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-teal-50/40 border border-teal-100/50 rounded-xl text-xs text-teal-800 leading-relaxed flex items-start space-x-2">
+                    <Check className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" />
+                    <span>
+                      Menggunakan warna tema <strong>Teal Kementerian (#0f766e)</strong> yang berwibawa, harmonis, dan sejalan dengan pedoman visual Dapodik/Kemendikbudristek.
                     </span>
                   </div>
                 )}

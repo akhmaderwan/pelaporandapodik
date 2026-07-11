@@ -9,6 +9,10 @@ import {
   ShieldAlert, FileText, RefreshCw, Edit3, Upload, Clock, Check,
   Eye, Trash2, ShieldCheck, ChevronDown, ChevronUp, Copy
 } from 'lucide-react';
+import { 
+  isLightColor, getContrastTextColor, getContrastMutedTextColor, 
+  getContrastBadgeBg, getContrastBorderColor, adjustHexColor 
+} from '../utils/colorUtils';
 
 interface StudentPortalViewProps {
   students: Student[];
@@ -25,6 +29,37 @@ export default function StudentPortalView({
   onAddStudent,
   onExitPortal 
 }: StudentPortalViewProps) {
+  // Theme Color Configurations & Contrast Adaptability Calculations
+  const themeHex = schoolProfile.useCustomColor && schoolProfile.themeColor ? schoolProfile.themeColor : '#0f766e';
+  const hasCustomColor = !!(schoolProfile.useCustomColor && schoolProfile.themeColor);
+  const isThemeLight = isLightColor(themeHex);
+  const themeTextColor = getContrastTextColor(themeHex);
+  const themeMutedTextColor = getContrastMutedTextColor(themeHex);
+  const themeBadgeBg = getContrastBadgeBg(themeHex);
+  const themeBorderColor = getContrastBorderColor(themeHex);
+
+  const bannerStyle = (() => {
+    if (schoolProfile.useCustomBackground && schoolProfile.backgroundUrl) {
+      const mask = isThemeLight 
+        ? 'linear-gradient(rgba(248, 250, 252, 0.94), rgba(241, 245, 249, 0.97))' 
+        : 'linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.88))';
+      return {
+        backgroundImage: `${mask}, url(${schoolProfile.backgroundUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundColor: themeHex
+      };
+    } else {
+      if (hasCustomColor) {
+        return {
+          backgroundColor: themeHex,
+          backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.12) 100%)'
+        };
+      }
+      return undefined;
+    }
+  })();
+
   // Portal landing active tab: 'login' | 'register'
   const [activePortalTab, setActivePortalTab] = useState<'login' | 'register'>('login');
 
@@ -348,21 +383,17 @@ export default function StudentPortalView({
       
       {/* 1. PORTAL HEADER BANNER */}
       <div 
-        className="bg-gradient-to-r from-teal-700 to-cyan-800 rounded-2xl p-6 text-white shadow-md border border-teal-600/30 relative overflow-hidden"
-        style={schoolProfile.useCustomBackground && schoolProfile.backgroundUrl ? {
-          backgroundImage: `linear-gradient(rgba(15, 118, 110, 0.82), rgba(21, 94, 117, 0.92)), url(${schoolProfile.backgroundUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        } : undefined}
+        className={`rounded-2xl p-6 shadow-md relative overflow-hidden border ${themeTextColor} ${hasCustomColor ? '' : 'bg-gradient-to-r from-teal-700 to-cyan-800 border-teal-600/30'}`}
+        style={bannerStyle}
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-4">
-            <div className="bg-white/15 p-3 rounded-xl backdrop-blur-md">
-              <Users className="h-7 w-7 text-white" />
+            <div className={`p-3 rounded-xl backdrop-blur-md ${isThemeLight ? 'bg-slate-900/10 text-slate-800' : 'bg-white/15 text-white'}`}>
+              <Users className="h-7 w-7" />
             </div>
             <div>
               <h2 className="text-xl font-bold tracking-tight">Portal Siswa Mandiri</h2>
-              <p className="text-teal-100 text-sm">
+              <p className={`text-sm ${isThemeLight ? 'text-slate-600' : 'text-teal-100/90'}`}>
                 Sistem perbaikan biodata peserta didik {schoolProfile.namaSekolah} secara mandiri dan real-time
               </p>
             </div>
@@ -375,7 +406,7 @@ export default function StudentPortalView({
         <div className={`mx-auto my-8 transition-all duration-300 ${activePortalTab === 'register' ? 'max-w-2xl' : 'max-w-md'}`} id="student-portal-login">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             {/* Top decorative bar */}
-            <div className="h-2 bg-gradient-to-r from-teal-500 to-cyan-500"></div>
+            <div className="h-2" style={{ backgroundColor: themeHex }}></div>
 
             {/* Toggle Tabs */}
             <div className="flex border-b border-gray-100 bg-gray-50/50">
@@ -385,11 +416,12 @@ export default function StudentPortalView({
                   setActivePortalTab('login');
                   setAuthError(null);
                 }}
-                className={`flex-1 py-3 text-xs font-extrabold text-center border-b-2 transition-all cursor-pointer ${
+                className={`flex-1 py-3.5 text-xs font-black text-center border-b-2 transition-all cursor-pointer ${
                   activePortalTab === 'login'
-                    ? 'border-teal-600 text-teal-600 bg-white'
+                    ? 'bg-white'
                     : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
+                style={activePortalTab === 'login' ? { borderBottomColor: themeHex, color: themeHex } : undefined}
               >
                 MASUK PORTAL SISWA
               </button>
@@ -399,11 +431,12 @@ export default function StudentPortalView({
                   setActivePortalTab('register');
                   setRegError(null);
                 }}
-                className={`flex-1 py-3 text-xs font-extrabold text-center border-b-2 transition-all cursor-pointer ${
+                className={`flex-1 py-3.5 text-xs font-black text-center border-b-2 transition-all cursor-pointer ${
                   activePortalTab === 'register'
-                    ? 'border-teal-600 text-teal-600 bg-white'
+                    ? 'bg-white'
                     : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
+                style={activePortalTab === 'register' ? { borderBottomColor: themeHex, color: themeHex } : undefined}
               >
                 PENDAFTARAN SISWA BARU
               </button>
@@ -503,7 +536,15 @@ export default function StudentPortalView({
                     <button
                       id="btn-student-login"
                       type="submit"
-                      className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-black text-sm py-3.5 px-4 rounded-xl shadow-md shadow-teal-100 transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] mt-2"
+                      className={`w-full flex items-center justify-center space-x-2 font-black text-sm py-3.5 px-4 rounded-xl shadow-md transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] mt-2 ${
+                        hasCustomColor 
+                          ? `${themeTextColor} hover:opacity-90` 
+                          : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-teal-100'
+                      }`}
+                      style={hasCustomColor ? { 
+                        backgroundColor: themeHex,
+                        border: isThemeLight ? '1px solid rgba(15, 23, 42, 0.12)' : 'none'
+                      } : undefined}
                     >
                       <Sparkles className="h-4 w-4" />
                       <span>Verifikasi & Masuk Portal</span>
@@ -749,7 +790,15 @@ export default function StudentPortalView({
                     <button
                       id="btn-student-register"
                       type="submit"
-                      className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-md shadow-teal-100 transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                      className={`w-full flex items-center justify-center space-x-2 font-bold text-sm py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] ${
+                        hasCustomColor 
+                          ? `${themeTextColor} hover:opacity-90` 
+                          : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-teal-100'
+                      }`}
+                      style={hasCustomColor ? { 
+                        backgroundColor: themeHex,
+                        border: isThemeLight ? '1px solid rgba(15, 23, 42, 0.12)' : 'none'
+                      } : undefined}
                     >
                       <UserPlus className="h-4 w-4" />
                       <span>Simpan Baru & Masuk ke Portal</span>
@@ -773,29 +822,25 @@ export default function StudentPortalView({
         <div className="space-y-6 animate-fade-in" id="student-portal-dashboard">
           {/* Welcome/Halaman Title Banner */}
           <div 
-            className="bg-gradient-to-r from-teal-700 via-teal-600 to-cyan-600 rounded-2xl shadow-sm text-white p-6 relative overflow-hidden"
-            style={schoolProfile.useCustomBackground && schoolProfile.backgroundUrl ? {
-              backgroundImage: `linear-gradient(rgba(15, 118, 110, 0.82), rgba(21, 94, 117, 0.92)), url(${schoolProfile.backgroundUrl})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            } : undefined}
+            className={`rounded-2xl shadow-sm p-6 relative overflow-hidden border ${themeTextColor} ${hasCustomColor ? '' : 'bg-gradient-to-r from-teal-700 via-teal-600 to-cyan-600'}`}
+            style={bannerStyle}
           >
             <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>
             <div className="absolute left-0 bottom-0 -translate-x-12 translate-y-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
               <div className="space-y-1">
-                <span className="text-teal-200 text-xs font-bold uppercase tracking-wider block">PORTAL MANDIRI SISWA</span>
+                <span className={`text-xs font-bold uppercase tracking-wider block ${isThemeLight ? 'text-slate-600' : 'text-teal-200'}`}>PORTAL MANDIRI SISWA</span>
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2">
-                  <BookOpen className="h-6 w-6 stroke-[2] text-cyan-200" />
+                  <BookOpen className={`h-6 w-6 stroke-[2] ${isThemeLight ? 'text-slate-700' : 'text-cyan-200'}`} />
                   <span>Halaman Perbaikan Data Dapodik</span>
                 </h2>
-                <p className="text-teal-100/95 text-xs max-w-xl leading-relaxed">
+                <p className={`text-xs max-w-xl leading-relaxed ${isThemeLight ? 'text-slate-600' : 'text-teal-100/95'}`}>
                   Selamat datang, <strong>{currentStudent.nama}</strong>. Silakan lakukan perbaikan mandiri data Anda melalui formulir di bawah ini jika terdapat kesalahan atau ketidaksesuaian.
                 </p>
               </div>
               <div className="flex items-center space-x-2.5 self-start md:self-auto">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="text-[10px] font-extrabold tracking-wider bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-xs">SINKRONISASI AKTIF</span>
+                <span className={`text-[10px] font-extrabold tracking-wider px-3 py-1.5 rounded-lg backdrop-blur-xs ${isThemeLight ? 'bg-slate-900/10 text-slate-800' : 'bg-white/10 text-white'}`}>SINKRONISASI AKTIF</span>
               </div>
             </div>
           </div>
@@ -1116,22 +1161,22 @@ export default function StudentPortalView({
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block px-2 mb-1">
                   Sub Menu Perbaikan Data
                 </span>
-                
-                <button
+                       <button
                   type="button"
                   id="submenu-form"
                   onClick={() => setActiveSubTab('form')}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     activeSubTab === 'form'
-                      ? 'bg-teal-600 text-white shadow-sm shadow-teal-100'
+                      ? (hasCustomColor ? `${themeTextColor} shadow-sm` : 'bg-teal-600 text-white shadow-sm shadow-teal-100')
                       : 'text-gray-600 hover:text-gray-950 hover:bg-gray-50'
                   }`}
+                  style={activeSubTab === 'form' && hasCustomColor ? { backgroundColor: themeHex } : undefined}
                 >
                   <div className="flex items-center space-x-2.5">
                     <Edit3 className="h-4 w-4 flex-shrink-0" />
                     <span>Formulir Perbaikan</span>
                   </div>
-                  <ChevronRight className={`h-4 w-4 opacity-50 ${activeSubTab === 'form' ? 'text-white' : 'text-gray-400'}`} />
+                  <ChevronRight className={`h-4 w-4 opacity-50 ${activeSubTab === 'form' ? (isThemeLight ? 'text-slate-800' : 'text-white') : 'text-gray-400'}`} />
                 </button>
 
                 <button
@@ -1140,15 +1185,16 @@ export default function StudentPortalView({
                   onClick={() => setActiveSubTab('documents')}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     activeSubTab === 'documents'
-                      ? 'bg-teal-600 text-white shadow-sm shadow-teal-100'
+                      ? (hasCustomColor ? `${themeTextColor} shadow-sm` : 'bg-teal-600 text-white shadow-sm shadow-teal-100')
                       : 'text-gray-600 hover:text-gray-950 hover:bg-gray-50'
                   }`}
+                  style={activeSubTab === 'documents' && hasCustomColor ? { backgroundColor: themeHex } : undefined}
                 >
                   <div className="flex items-center space-x-2.5">
                     <FileText className="h-4 w-4 flex-shrink-0" />
                     <span>Dokumen Pendukung KK/Akta</span>
                   </div>
-                  <ChevronRight className={`h-4 w-4 opacity-50 ${activeSubTab === 'documents' ? 'text-white' : 'text-gray-400'}`} />
+                  <ChevronRight className={`h-4 w-4 opacity-50 ${activeSubTab === 'documents' ? (isThemeLight ? 'text-slate-800' : 'text-white') : 'text-gray-400'}`} />
                 </button>
 
                 <button
@@ -1157,15 +1203,16 @@ export default function StudentPortalView({
                   onClick={() => setActiveSubTab('workflow')}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     activeSubTab === 'workflow'
-                      ? 'bg-teal-600 text-white shadow-sm shadow-teal-100'
+                      ? (hasCustomColor ? `${themeTextColor} shadow-sm` : 'bg-teal-600 text-white shadow-sm shadow-teal-100')
                       : 'text-gray-600 hover:text-gray-950 hover:bg-gray-50'
                   }`}
+                  style={activeSubTab === 'workflow' && hasCustomColor ? { backgroundColor: themeHex } : undefined}
                 >
                   <div className="flex items-center space-x-2.5">
                     <RefreshCw className="h-4 w-4 flex-shrink-0" />
                     <span>Alur Sinkronisasi</span>
                   </div>
-                  <ChevronRight className={`h-4 w-4 opacity-50 ${activeSubTab === 'workflow' ? 'text-white' : 'text-gray-400'}`} />
+                  <ChevronRight className={`h-4 w-4 opacity-50 ${activeSubTab === 'workflow' ? (isThemeLight ? 'text-slate-800' : 'text-white') : 'text-gray-400'}`} />
                 </button>
               </div>
             </div>
@@ -1816,15 +1863,23 @@ export default function StudentPortalView({
                           onClick={() => setSelectedWorkflowStep(1)}
                           className="relative cursor-pointer group"
                         >
-                          <div className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
-                            selectedWorkflowStep === 1
-                              ? 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100'
-                              : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
-                          }`}>
+                          <div 
+                            className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
+                              selectedWorkflowStep === 1
+                                ? (hasCustomColor ? `${themeTextColor} border-transparent shadow-md` : 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100')
+                                : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
+                            }`}
+                            style={selectedWorkflowStep === 1 && hasCustomColor ? { backgroundColor: themeHex } : undefined}
+                          >
                             1
                           </div>
                           <div>
-                            <h5 className={`font-bold text-xs ${selectedWorkflowStep === 1 ? 'text-teal-700' : 'text-gray-800'}`}>Siswa Mengajukan Perbaikan</h5>
+                            <h5 
+                              className={`font-bold text-xs ${selectedWorkflowStep === 1 ? (hasCustomColor ? '' : 'text-teal-700') : 'text-gray-800'}`}
+                              style={selectedWorkflowStep === 1 && hasCustomColor ? { color: themeHex } : undefined}
+                            >
+                              Siswa Mengajukan Perbaikan
+                            </h5>
                             <p className="text-[10px] text-gray-400 mt-0.5">Pengisian biodata secara mandiri dan mengunggah KK/Akta.</p>
                           </div>
                         </div>
@@ -1834,15 +1889,23 @@ export default function StudentPortalView({
                           onClick={() => setSelectedWorkflowStep(2)}
                           className="relative cursor-pointer group"
                         >
-                          <div className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
-                            selectedWorkflowStep === 2
-                              ? 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100'
-                              : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
-                          }`}>
+                          <div 
+                            className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
+                              selectedWorkflowStep === 2
+                                ? (hasCustomColor ? `${themeTextColor} border-transparent shadow-md` : 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100')
+                                : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
+                            }`}
+                            style={selectedWorkflowStep === 2 && hasCustomColor ? { backgroundColor: themeHex } : undefined}
+                          >
                             2
                           </div>
                           <div>
-                            <h5 className={`font-bold text-xs ${selectedWorkflowStep === 2 ? 'text-teal-700' : 'text-gray-800'}`}>Verifikasi Wali Data / Operator</h5>
+                            <h5 
+                              className={`font-bold text-xs ${selectedWorkflowStep === 2 ? (hasCustomColor ? '' : 'text-teal-700') : 'text-gray-800'}`}
+                              style={selectedWorkflowStep === 2 && hasCustomColor ? { color: themeHex } : undefined}
+                            >
+                              Verifikasi Wali Data / Operator
+                            </h5>
                             <p className="text-[10px] text-gray-400 mt-0.5">Pemeriksaan keaslian KK/Akta oleh operator di dashboard admin.</p>
                           </div>
                         </div>
@@ -1852,15 +1915,23 @@ export default function StudentPortalView({
                           onClick={() => setSelectedWorkflowStep(3)}
                           className="relative cursor-pointer group"
                         >
-                          <div className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
-                            selectedWorkflowStep === 3
-                              ? 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100'
-                              : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
-                          }`}>
+                          <div 
+                            className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
+                              selectedWorkflowStep === 3
+                                ? (hasCustomColor ? `${themeTextColor} border-transparent shadow-md` : 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100')
+                                : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
+                            }`}
+                            style={selectedWorkflowStep === 3 && hasCustomColor ? { backgroundColor: themeHex } : undefined}
+                          >
                             3
                           </div>
                           <div>
-                            <h5 className={`font-bold text-xs ${selectedWorkflowStep === 3 ? 'text-teal-700' : 'text-gray-800'}`}>Persetujuan & TTE SPTJM</h5>
+                            <h5 
+                              className={`font-bold text-xs ${selectedWorkflowStep === 3 ? (hasCustomColor ? '' : 'text-teal-700') : 'text-gray-800'}`}
+                              style={selectedWorkflowStep === 3 && hasCustomColor ? { color: themeHex } : undefined}
+                            >
+                              Persetujuan & TTE SPTJM
+                            </h5>
                             <p className="text-[10px] text-gray-400 mt-0.5">Kepala sekolah mengesahkan berkas secara elektronik.</p>
                           </div>
                         </div>
@@ -1870,15 +1941,23 @@ export default function StudentPortalView({
                           onClick={() => setSelectedWorkflowStep(4)}
                           className="relative cursor-pointer group"
                         >
-                          <div className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
-                            selectedWorkflowStep === 4
-                              ? 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100'
-                              : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
-                          }`}>
+                          <div 
+                            className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
+                              selectedWorkflowStep === 4
+                                ? (hasCustomColor ? `${themeTextColor} border-transparent shadow-md` : 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100')
+                                : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
+                            }`}
+                            style={selectedWorkflowStep === 4 && hasCustomColor ? { backgroundColor: themeHex } : undefined}
+                          >
                             4
                           </div>
                           <div>
-                            <h5 className={`font-bold text-xs ${selectedWorkflowStep === 4 ? 'text-teal-700' : 'text-gray-800'}`}>Sinkronisasi Server Pusat</h5>
+                            <h5 
+                              className={`font-bold text-xs ${selectedWorkflowStep === 4 ? (hasCustomColor ? '' : 'text-teal-700') : 'text-gray-800'}`}
+                              style={selectedWorkflowStep === 4 && hasCustomColor ? { color: themeHex } : undefined}
+                            >
+                              Sinkronisasi Server Pusat
+                            </h5>
                             <p className="text-[10px] text-gray-400 mt-0.5">Pengiriman paket data lokal ke server Dapodik Kemendikbud.</p>
                           </div>
                         </div>
@@ -1888,15 +1967,23 @@ export default function StudentPortalView({
                           onClick={() => setSelectedWorkflowStep(5)}
                           className="relative cursor-pointer group"
                         >
-                          <div className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
-                            selectedWorkflowStep === 5
-                              ? 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100'
-                              : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
-                          }`}>
+                          <div 
+                            className={`absolute -left-10 top-0.5 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
+                              selectedWorkflowStep === 5
+                                ? (hasCustomColor ? `${themeTextColor} border-transparent shadow-md` : 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100')
+                                : 'bg-white text-gray-500 border-gray-200 group-hover:bg-slate-50'
+                            }`}
+                            style={selectedWorkflowStep === 5 && hasCustomColor ? { backgroundColor: themeHex } : undefined}
+                          >
                             5
                           </div>
                           <div>
-                            <h5 className={`font-bold text-xs ${selectedWorkflowStep === 5 ? 'text-teal-700' : 'text-gray-800'}`}>Penyelarasan Ditjen Dukcapil</h5>
+                            <h5 
+                              className={`font-bold text-xs ${selectedWorkflowStep === 5 ? (hasCustomColor ? '' : 'text-teal-700') : 'text-gray-800'}`}
+                              style={selectedWorkflowStep === 5 && hasCustomColor ? { color: themeHex } : undefined}
+                            >
+                              Penyelarasan Ditjen Dukcapil
+                            </h5>
                             <p className="text-[10px] text-gray-400 mt-0.5">Verifikasi kecocokan nomor identitas ke Ditjen Dukcapil pusat.</p>
                           </div>
                         </div>
@@ -1906,7 +1993,12 @@ export default function StudentPortalView({
                     {/* DETAILS CARD */}
                     <div className="md:col-span-6 bg-slate-50 border border-gray-100 rounded-2xl p-4.5 flex flex-col justify-between">
                       <div className="space-y-3">
-                        <span className="text-[9px] font-black tracking-widest uppercase bg-teal-100 text-teal-800 px-2 py-0.5 rounded-md">
+                        <span 
+                          className={`text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md ${
+                            hasCustomColor ? themeTextColor : 'bg-teal-100 text-teal-800'
+                          }`}
+                          style={hasCustomColor ? { backgroundColor: themeHex } : undefined}
+                        >
                           Detail Tahapan {selectedWorkflowStep}
                         </span>
 

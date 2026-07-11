@@ -19,6 +19,8 @@ export interface SchoolProfile {
   useKopGambar?: boolean;
   backgroundUrl?: string;
   useCustomBackground?: boolean;
+  themeColor?: string;
+  useCustomColor?: boolean;
 }
 
 export interface Student {
